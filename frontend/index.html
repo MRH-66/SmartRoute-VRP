@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRoute - Employee Transport Optimizer</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-truck"></i> SmartRoute
+            </a>
+            <span class="navbar-text">
+                Employee Transport Optimizer
+            </span>
+        </div>
+    </nav>
+
+    <!-- Progress Bar -->
+    <div class="container mt-3">
+        <div class="progress-container">
+            <div class="progress-step" id="step-factory">
+                <div class="step-circle">1</div>
+                <div class="step-label">Factory</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" id="step-vehicles">
+                <div class="step-circle">2</div>
+                <div class="step-label">Vehicles</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" id="step-depots">
+                <div class="step-circle">3</div>
+                <div class="step-label">Depots</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" id="step-optimize">
+                <div class="step-circle">4</div>
+                <div class="step-label">Optimize</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs" id="mainTabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" href="#dashboard">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="factory-tab" data-bs-toggle="tab" href="#factory">
+                    <i class="fas fa-industry"></i> Factory
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="vehicles-tab" data-bs-toggle="tab" href="#vehicles">
+                    <i class="fas fa-truck"></i> Vehicles
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="depots-tab" data-bs-toggle="tab" href="#depots">
+                    <i class="fas fa-map-marker-alt"></i> Depots
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="optimization-tab" data-bs-toggle="tab" href="#optimization">
+                    <i class="fas fa-route"></i> Optimization
+                </a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="mainTabContent">
+            
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar"></i> Configuration Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="config-item">
+                                            <h6><i class="fas fa-industry"></i> Factory Location</h6>
+                                            <div id="factory-status" class="status-not-set">
+                                                <i class="fas fa-times-circle"></i> Not set
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="config-item">
+                                            <h6><i class="fas fa-truck"></i> Fleet Summary</h6>
+                                            <div id="fleet-status" class="status-not-set">
+                                                <i class="fas fa-times-circle"></i> No vehicles
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="config-item">
+                                            <h6><i class="fas fa-map-marker-alt"></i> Depot Summary</h6>
+                                            <div id="depot-status" class="status-not-set">
+                                                <i class="fas fa-times-circle"></i> No depots
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="config-item">
+                                            <h6><i class="fas fa-route"></i> Optimization Status</h6>
+                                            <div id="optimization-status" class="status-not-set">
+                                                <i class="fas fa-clock"></i> Pending configuration
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-rocket"></i> Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="quick-actions">
+                                    <!-- Dynamic content -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factory Tab -->
+            <div class="tab-pane fade" id="factory">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-industry"></i> Factory Location</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="factory-map" style="height: 400px;"></div>
+                                <p class="text-muted mt-2">
+                                    <i class="fas fa-info-circle"></i> Click on the map to set your factory location
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="factory-form">
+                                    <h6>Factory Details</h6>
+                                    <form id="factoryForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Factory Name</label>
+                                            <input type="text" class="form-control" id="factoryName" placeholder="e.g., Main Factory">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Latitude</label>
+                                            <input type="number" class="form-control" id="factoryLat" step="0.000001" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Longitude</label>
+                                            <input type="number" class="form-control" id="factoryLon" step="0.000001" readonly>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Set Factory Location
+                                        </button>
+                                    </form>
+                                </div>
+                                <div id="factory-current" style="display: none;">
+                                    <h6>Current Factory</h6>
+                                    <div id="factory-info"></div>
+                                    <button class="btn btn-warning mt-2" onclick="changeFactory()">
+                                        <i class="fas fa-edit"></i> Change Location
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicles Tab -->
+            <div class="tab-pane fade" id="vehicles">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-truck"></i> Vehicle Fleet</h5>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="showBulkVehicleModal()">
+                                <i class="fas fa-plus-circle"></i> Add Multiple
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddVehicleModal()">
+                                <i class="fas fa-plus"></i> Add Vehicle
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="vehicle-summary" class="row mb-3">
+                            <!-- Dynamic summary cards -->
+                        </div>
+                        <div id="vehicle-list">
+                            <!-- Dynamic vehicle table -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Depots Tab -->
+            <div class="tab-pane fade" id="depots">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-map-marker-alt"></i> Pickup Depots</h5>
+                        <div>
+                            <button class="btn btn-success me-2" onclick="showBulkDepotModal()">
+                                <i class="fas fa-plus-circle"></i> Add Multiple
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddDepotModal()">
+                                <i class="fas fa-plus"></i> Add Depot
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="depot-map" style="height: 400px;"></div>
+                                <p class="text-muted mt-2">
+                                    <i class="fas fa-info-circle"></i> Click on the map to add depot locations
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="depot-summary">
+                                    <!-- Dynamic depot summary -->
+                                </div>
+                                <div id="depot-list" class="mt-3">
+                                    <!-- Dynamic depot list -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Tab -->
+            <div class="tab-pane fade" id="optimization">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-route"></i> Route Optimization</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            Click "Optimize Routes" to find the most efficient vehicle routes for your depots. 
+                            The system will automatically minimize costs and optimize vehicle usage.
+                        </div>
+                        
+                        <div class="text-center">
+                            <button class="btn btn-primary btn-lg" onclick="optimizeRoutes()" id="optimizeBtn">
+                                <i class="fas fa-route"></i> Optimize Routes
+                            </button>
+                        </div>
+                        
+                        <div id="optimization-loading" style="display: none;" class="text-center mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Optimizing routes... This may take a moment.</p>
+                        </div>
+                        
+                        <div id="optimization-results" style="display: none;" class="mt-4">
+                            <!-- Dynamic results -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Vehicle Modal -->
+    <div class="modal fade" id="addVehicleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addVehicleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Vehicle Name</label>
+                            <input type="text" class="form-control" id="vehicleName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Vehicle Type</label>
+                            <select class="form-control" id="vehicleType" required>
+                                <option value="Self-owned">Self-owned</option>
+                                <option value="Rented">Rented</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Capacity (seats)</label>
+                            <input type="number" class="form-control" id="vehicleCapacity" min="1" max="200" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cost per KM (PKR)</label>
+                            <input type="number" class="form-control" id="vehicleCost" min="0.1" step="0.1" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addVehicle()">Add Vehicle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Vehicles Modal -->
+    <div class="modal fade" id="bulkVehicleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Multiple Vehicles</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="bulk-vehicle-forms">
+                        <!-- Dynamic forms -->
+                    </div>
+                    <button class="btn btn-success" onclick="addVehicleForm()">
+                        <i class="fas fa-plus"></i> Add Another Vehicle
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addBulkVehicles()">Add All Vehicles</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Depot Modal -->
+    <div class="modal fade" id="addDepotModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Depot</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addDepotForm">
+                        <div class="mb-3">
+                            <label class="form-label">Depot Name</label>
+                            <input type="text" class="form-control" id="depotName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Latitude</label>
+                            <input type="number" class="form-control" id="depotLat" step="0.000001" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Longitude</label>
+                            <input type="number" class="form-control" id="depotLon" step="0.000001" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Number of Workers</label>
+                            <input type="number" class="form-control" id="depotWorkers" min="1" max="500" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addDepot()">Add Depot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Depots Modal -->
+    <div class="modal fade" id="bulkDepotModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Multiple Depots</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="bulk-depot-forms">
+                        <!-- Dynamic forms -->
+                    </div>
+                    <button class="btn btn-success" onclick="addDepotForm()">
+                        <i class="fas fa-plus"></i> Add Another Depot
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addBulkDepots()">Add All Depots</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
+    <script src="/static/js/api.js?v=2.1"></script>
+    <script src="/static/js/route-visualizer.js?v=2.1"></script>
+    <script src="/static/js/app.js?v=2.1"></script>
+</body>
+</html>

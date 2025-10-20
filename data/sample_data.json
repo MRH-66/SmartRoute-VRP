@@ -1,0 +1,75 @@
+{
+  "sample_configuration": {
+    "factory": {
+      "name": "Main Factory - Lahore",
+      "latitude": 31.5204,
+      "longitude": 74.3587
+    },
+    "vehicles": [
+      {
+        "id": "vehicle_1",
+        "name": "Bus-01",
+        "vehicle_type": "Self-owned",
+        "capacity": 50,
+        "cost_per_km": 25.0
+      },
+      {
+        "id": "vehicle_2", 
+        "name": "Van-03",
+        "vehicle_type": "Rented",
+        "capacity": 20,
+        "cost_per_km": 42.0
+      },
+      {
+        "id": "vehicle_3",
+        "name": "Bus-02",
+        "vehicle_type": "Self-owned", 
+        "capacity": 45,
+        "cost_per_km": 28.0
+      }
+    ],
+    "depots": [
+      {
+        "id": "depot_1",
+        "name": "Shalimar",
+        "latitude": 31.6045,
+        "longitude": 74.3567,
+        "worker_count": 25
+      },
+      {
+        "id": "depot_2",
+        "name": "DHA Phase 5",
+        "latitude": 31.4697,
+        "longitude": 74.4078,
+        "worker_count": 18
+      },
+      {
+        "id": "depot_3",
+        "name": "Gulberg",
+        "latitude": 31.5203,
+        "longitude": 74.3441,
+        "worker_count": 22
+      },
+      {
+        "id": "depot_4",
+        "name": "Model Town",
+        "latitude": 31.4833,
+        "longitude": 74.3286,
+        "worker_count": 15
+      },
+      {
+        "id": "depot_5",
+        "name": "Johar Town",
+        "latitude": 31.4511,
+        "longitude": 74.2611,
+        "worker_count": 30
+      }
+    ]
+  },
+  "notes": [
+    "This is sample data for testing the SmartRoute application",
+    "All coordinates are for Lahore, Pakistan",
+    "Costs are in Pakistani Rupees (PKR)",
+    "Worker counts represent the number of employees to be picked up from each location"
+  ]
+}

@@ -1,0 +1,20 @@
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Data Validation & Models
+pydantic>=2.4.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Distance Calculations
+haversine>=2.8.0
+
+# Export Functionality
+reportlab>=4.0.0
+
+# Optional: HTTP requests (if OSRM integration added in future)
+requests>=2.31.0
