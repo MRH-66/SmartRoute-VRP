@@ -5,7 +5,8 @@
 
 class SmartRouteAPI {
     constructor(baseUrl = '') {
-        this.baseUrl = baseUrl;
+        // Use config if available, otherwise use provided baseUrl
+        this.baseUrl = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || baseUrl;
         this.sessionId = 'default';
     }
 
