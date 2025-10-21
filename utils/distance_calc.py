@@ -112,21 +112,21 @@ def calculate_geodesic_distance_matrix(coordinates: List[Tuple[float, float]]) -
     return matrix
 
 def create_distance_matrix(factory_coords: Tuple[float, float], 
-                          depot_coords: List[Tuple[float, float]],
+                          spot_coords: List[Tuple[float, float]],
                           use_osrm: bool = True) -> Dict[str, any]:
     """
     Create distance matrix for VRP solving
     
     Args:
         factory_coords: (lat, lon) of factory
-        depot_coords: List of (lat, lon) for each depot
+        spot_coords: List of (lat, lon) for each pickup_spot
         use_osrm: Whether to try OSRM API first
     
     Returns:
         Dictionary containing distance matrix and metadata
     """
-    # Combine all coordinates (factory first, then depots)
-    all_coordinates = [factory_coords] + depot_coords
+    # Combine all coordinates (factory first, then pickup_spots)
+    all_coordinates = [factory_coords] + spot_coords
     
     # Try OSRM first, then fallback to geodesic
     if use_osrm:
@@ -145,7 +145,7 @@ def create_distance_matrix(factory_coords: Tuple[float, float],
         'matrix': distance_matrix,
         'method': method_used,
         'factory_index': 0,
-        'depot_indices': list(range(1, len(all_coordinates))),
+        'spot_indices': list(range(1, len(all_coordinates))),
         'coordinates': all_coordinates
     }
 

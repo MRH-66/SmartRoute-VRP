@@ -1,16 +1,16 @@
 # SmartRoute - Employee Transport Optimizer
 
-A comprehensive Vehicle Routing Problem (VRP) solution for optimizing employee transport from multiple pickup depots to a central factory location. Built with FastAPI backend and modern web frontend.
+A comprehensive Vehicle Routing Problem (VRP) solution for optimizing employee transport from multiple pickup pickup_spots to a central factory location. Built with FastAPI backend and modern web frontend.
 
 ## 🚀 Features
 
 ### Core Functionality
 - **Factory Configuration**: Set and manage central factory location
 - **Vehicle Fleet Management**: Add multiple vehicles with different capacities and cost structures
-- **Depot Management**: Configure multiple employee pickup locations
+- **PickupSpot Management**: Configure multiple employee pickup locations
 - **Route Optimization**: Advanced VRP solving using Adaptive Large Neighborhood Search (ALNS)
 - **Interactive Maps**: Click-to-place locations using Leaflet maps with route visualization
-- **Bulk Data Entry**: Add multiple vehicles and depots efficiently
+- **Bulk Data Entry**: Add multiple vehicles and pickup_spots efficiently
 - **Visual Route Display**: Color-coded routes on interactive maps with detailed popups
 
 ### Technical Highlights
@@ -80,10 +80,10 @@ Navigate to: `http://localhost:8000`
 3. Use "Bulk Add Vehicles" for multiple vehicles
 4. Configure: Name, Type (Self-owned/Rented), Capacity, Cost per km
 
-### Step 3: Add Depots
-1. Go to "Depots" tab
-2. Use "Add Depot" form for single entries
-3. Use "Bulk Add Depots" for multiple depots
+### Step 3: Add PickupSpots
+1. Go to "PickupSpots" tab
+2. Use "Add PickupSpot" form for single entries
+3. Use "Bulk Add PickupSpots" for multiple pickup_spots
 4. Configure: Name, Employee count, Location (click on map)
 
 ### Step 4: Optimize Routes
@@ -93,7 +93,7 @@ Navigate to: `http://localhost:8000`
 4. See color-coded routes on the map with detailed information
 
 ### Step 5: Explore Route Details
-1. Click on any route line to see depot and vehicle information
+1. Click on any route line to see pickup_spot and vehicle information
 2. Review total cost, distance, and capacity utilization
 3. Export results to CSV or PDF for reporting
 
@@ -107,12 +107,12 @@ Navigate to: `http://localhost:8000`
 - **Strict Validation**: Routes are validated to prevent over-capacity violations
 - **Smart Consolidation**: System attempts to minimize vehicles used while respecting limits
 - **Detailed Logging**: Provides warnings for any constraint violations
-- **Worker Assignment**: Each depot's workers assigned to single vehicle for efficiency
+- **Worker Assignment**: Each pickup_spot's workers assigned to single vehicle for efficiency
 
 ### Optimization Algorithm
 - **ALNS Method**: Adaptive Large Neighborhood Search with 100 iterations
 - **Greedy Initialization**: Fast initial solution construction
-- **Destroy/Repair Operators**: Iteratively improves routes by removing and reinserting depots
+- **Destroy/Repair Operators**: Iteratively improves routes by removing and reinserting pickup_spots
 - **Vehicle Penalty**: 1000 PKR per vehicle to encourage route consolidation
 - **Distance Calculation**: Haversine formula for accurate geographic distances
 
@@ -150,9 +150,9 @@ Once the application is running, visit:
 - `GET /api/vehicles` - List all vehicles
 - `POST /api/vehicles` - Add single vehicle
 - `POST /api/vehicles/bulk` - Add multiple vehicles
-- `GET /api/depots` - List all depots
-- `POST /api/depots` - Add single depot
-- `POST /api/depots/bulk` - Add multiple depots
+- `GET /api/pickup_spots` - List all pickup_spots
+- `POST /api/pickup_spots` - Add single pickup_spot
+- `POST /api/pickup_spots/bulk` - Add multiple pickup_spots
 - `POST /api/optimize` - Run route optimization
 - `GET /api/export/csv` - Export results to CSV
 - `GET /api/export/pdf` - Export results to PDF
@@ -168,7 +168,7 @@ Once the application is running, visit:
    - Check if total vehicle capacity >= total employee demand
    - Verify all locations have valid coordinates
    - Review capacity warnings in browser console
-   - Ensure no single depot exceeds maximum vehicle capacity
+   - Ensure no single pickup_spot exceeds maximum vehicle capacity
 
 3. **"Some workers unassigned"**
    - Total demand exceeds available capacity
@@ -181,26 +181,26 @@ Once the application is running, visit:
 
 5. **Routes not showing on map**
    - Ensure optimization has been run successfully
-   - Check that depot map is visible
+   - Check that pickup_spot map is visible
    - Verify browser console for visualization errors
 
 ### Performance Tips
-- Use bulk addition for multiple vehicles/depots
+- Use bulk addition for multiple vehicles/pickup_spots
 - ALNS algorithm typically solves in 1-5 seconds for most problems
 - Regularly clear browser cache if experiencing issues
 - Review capacity constraints before optimization to avoid issues
 
 ## 🚗 Example Scenarios
 
-### Small Company (5 vehicles, 10 depots)
+### Small Company (5 vehicles, 10 pickup_spots)
 - Typical solving time: 1-2 seconds
 - Algorithm: ALNS with 100 iterations
 
-### Medium Company (15 vehicles, 30 depots)
+### Medium Company (15 vehicles, 30 pickup_spots)
 - Typical solving time: 2-4 seconds
 - Algorithm: ALNS with 100 iterations
 
-### Large Company (30+ vehicles, 50+ depots)
+### Large Company (30+ vehicles, 50+ pickup_spots)
 - Typical solving time: 3-6 seconds
 - Algorithm: ALNS with 100 iterations
 
@@ -211,8 +211,8 @@ The system uses a sophisticated ALNS algorithm with the following characteristic
 
 1. **Greedy Initial Solution**: Fast construction of initial routes
 2. **Destroy Operators**: 
-   - Random removal of depots from routes
-   - Worst-cost depot removal
+   - Random removal of pickup_spots from routes
+   - Worst-cost pickup_spot removal
 3. **Repair Operators**:
    - Greedy insertion with capacity validation
    - Cost-based placement

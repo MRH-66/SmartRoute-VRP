@@ -34,32 +34,57 @@ class RouteVisualizer {
             return;
         }
 
-        // Create route coordinates array
-        const coordinates = [];
-        
-        // Add factory as starting point
-        if (appState.config.factory) {
-            coordinates.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+        let coordinates = [];
+
+        // Check if we have OSRM route segments with waypoints
+        if (route.route_segments && route.route_segments.length > 0) {
+            console.log('Using OSRM route geometry from', route.route_segments.length, 'segments');
+            
+            // Collect waypoints from all segments
+            route.route_segments.forEach(segment => {
+                if (segment.waypoints && segment.waypoints.length > 0) {
+                    segment.waypoints.forEach(wp => {
+                        if (Array.isArray(wp) && wp.length === 2) {
+                            // Convert [lon, lat] to [lat, lon] for Leaflet
+                            coordinates.push([wp[1], wp[0]]);
+                        } else if (wp.lat !== undefined && wp.lon !== undefined) {
+                            coordinates.push([wp.lat, wp.lon]);
+                        }
+                    });
+                }
+            });
+            
+            console.log('Collected', coordinates.length, 'waypoints from OSRM geometry');
         }
 
-        // Add all stops in order
-        route.stops
-            .sort((a, b) => a.arrival_order - b.arrival_order)
-            .forEach(stop => {
-                coordinates.push([stop.latitude, stop.longitude]);
-            });
+        // Fallback to straight lines if no OSRM geometry
+        if (coordinates.length === 0) {
+            console.log('Using straight-line geometry (fallback)');
+            
+            // Add factory as starting point
+            if (appState.config.factory) {
+                coordinates.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+            }
 
-        // Return to factory
-        if (appState.config.factory) {
-            coordinates.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+            // Add all stops in order
+            route.stops
+                .sort((a, b) => a.arrival_order - b.arrival_order)
+                .forEach(stop => {
+                    coordinates.push([stop.latitude, stop.longitude]);
+                });
+
+            // Return to factory
+            if (appState.config.factory) {
+                coordinates.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+            }
         }
 
         // Create polyline for route
         const polyline = L.polyline(coordinates, {
             color: color,
             weight: 4,
-            opacity: 0.8,
-            dashArray: route.vehicle_type === 'Rented' ? '10, 5' : null
+            opacity: 0.7,
+            smoothFactor: 1.0
         });
 
         // Add popup with route information
@@ -70,10 +95,7 @@ class RouteVisualizer {
         polyline.addTo(map);
         this.routeLayers.push(polyline);
 
-        // Add direction arrows
-        this.addDirectionArrows(coordinates, color, map);
-
-        // Add stop markers with detailed info
+        // Add stop markers with detailed info (not direction arrows for cleaner look)
         this.addStopMarkers(route, color, map);
     }
 

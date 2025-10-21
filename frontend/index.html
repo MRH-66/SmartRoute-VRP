@@ -44,7 +44,7 @@
                 <div class="step-label">Vehicles</div>
             </div>
             <div class="progress-line"></div>
-            <div class="progress-step" id="step-depots">
+            <div class="progress-step" id="step-pickup-spots">
                 <div class="step-circle">3</div>
                 <div class="step-label">Depots</div>
             </div>
@@ -76,13 +76,18 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="depots-tab" data-bs-toggle="tab" href="#depots">
+                <a class="nav-link" id="pickup-spots-tab" data-bs-toggle="tab" href="#pickup-spots">
                     <i class="fas fa-map-marker-alt"></i> Depots
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="optimization-tab" data-bs-toggle="tab" href="#optimization">
                     <i class="fas fa-route"></i> Optimization
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="routes-tab" data-bs-toggle="tab" href="#routes">
+                    <i class="fas fa-map-marked-alt"></i> Routes
                 </a>
             </li>
         </ul>
@@ -227,7 +232,7 @@
             </div>
 
             <!-- Depots Tab -->
-            <div class="tab-pane fade" id="depots">
+            <div class="tab-pane fade" id="pickup-spots">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5><i class="fas fa-map-marker-alt"></i> Pickup Depots</h5>
@@ -289,6 +294,90 @@
                         
                         <div id="optimization-results" style="display: none;" class="mt-4">
                             <!-- Dynamic results -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routes Tab -->
+            <div class="tab-pane fade" id="routes">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-map-marked-alt"></i> Route Visualization</h5>
+                        <div>
+                            <button class="btn btn-sm btn-info" onclick="fitRoutesView()" id="fitRoutesBtn" style="display: none;">
+                                <i class="fas fa-expand"></i> Fit to View
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="routes-empty-state" class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            No routes to display. Please go to the <strong>Optimization</strong> tab and run route optimization first.
+                        </div>
+
+                        <!-- Routes Map -->
+                        <div id="routes-map-container" style="display: none;">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Route Map:</strong> Each vehicle route is shown in a different color. 
+                                Click on any route line to see details about that vehicle's journey.
+                            </div>
+                            
+                            <!-- Map -->
+                            <div id="routesMap" style="height: 500px; width: 100%; border-radius: 8px; border: 2px solid #dee2e6;"></div>
+                            
+                            <!-- Legend -->
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-list"></i> Route Legend</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="routes-legend" class="row">
+                                        <!-- Dynamic legend items -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Route Details -->
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-info-circle"></i> Route Summary</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="routes-details" class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Vehicle</th>
+                                                    <th>Distance</th>
+                                                    <th>Duration</th>
+                                                    <th>Cost</th>
+                                                    <th>Stops</th>
+                                                    <th>Workers</th>
+                                                    <th>Utilization</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="routes-details-body">
+                                                <!-- Dynamic rows -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Turn-by-Turn Directions -->
+                            <div class="card mt-3" id="turn-by-turn-container" style="display: none;">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-directions"></i> Turn-by-Turn Directions: <span id="selected-vehicle-name"></span></h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="turn-by-turn-directions">
+                                        <!-- Dynamic turn-by-turn steps -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -404,7 +493,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="bulk-depot-forms">
+                    <div id="bulk-pickup_spot-forms">
                         <!-- Dynamic forms -->
                     </div>
                     <button class="btn btn-success" onclick="addDepotForm()">
@@ -423,8 +512,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
-    <script src="/static/js/api.js?v=2.1"></script>
-    <script src="/static/js/route-visualizer.js?v=2.1"></script>
-    <script src="/static/js/app.js?v=2.1"></script>
+    <script src="/static/js/api.js?v=2.4"></script>
+    <script src="/static/js/route-visualizer.js?v=2.4"></script>
+    <script src="/static/js/app.js?v=2.4"></script>
 </body>
 </html>

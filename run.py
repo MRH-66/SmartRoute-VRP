@@ -20,7 +20,7 @@ def main():
     print("=" * 60)
     print("📍 Factory Location Management")
     print("🚗 Vehicle Fleet Configuration")
-    print("🏢 Employee Depot Setup")
+    print("🏢 Employee PickupSpot Setup")
     print("🗺️  Route Optimization with OR-Tools")
     print("=" * 60)
     

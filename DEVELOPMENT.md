@@ -85,7 +85,7 @@ VRP/
 ### Manual Testing Checklist
 - [ ] Factory location setting via map click
 - [ ] Vehicle add/edit/delete operations
-- [ ] Depot add/edit/delete with map interaction
+- [ ] PickupSpot add/edit/delete with map interaction
 - [ ] Route optimization with various configurations
 - [ ] Export functionality (CSV/PDF)
 - [ ] Route visualization on map
@@ -94,13 +94,13 @@ VRP/
 - [ ] Error handling and user feedback
 
 ### Test Scenarios
-1. **Basic Flow**: Factory → Vehicles → Depots → Optimize → View Routes
+1. **Basic Flow**: Factory → Vehicles → PickupSpots → Optimize → View Routes
 2. **Edge Cases**: 
    - No vehicles configured
    - Insufficient total capacity
-   - No depots added
-   - Single depot with workers > largest vehicle capacity
-3. **Large Dataset**: 10+ vehicles, 20+ depots
+   - No pickup_spots added
+   - Single pickup_spot with workers > largest vehicle capacity
+3. **Large Dataset**: 10+ vehicles, 20+ pickup_spots
 4. **Performance**: Optimization time for various problem sizes
 
 ## Deployment
@@ -155,7 +155,7 @@ DEFAULT_LON=74.3587
 
 ### Application Settings
 - ALNS iterations: 100 (hardcoded)
-- Destroy percentage: 20-40% of depots
+- Destroy percentage: 20-40% of pickup_spots
 - Vehicle penalty: 1000 PKR
 - Distance calculation: Haversine formula
 - Map zoom level: 12 (city level)
@@ -164,13 +164,13 @@ DEFAULT_LON=74.3587
 ## Performance Considerations
 
 ### Optimization Scalability
-- **Small**: 5 vehicles, 15 depots - < 1 second
-- **Medium**: 10 vehicles, 30 depots - 1-3 seconds  
-- **Large**: 20+ vehicles, 50+ depots - 3-6 seconds
+- **Small**: 5 vehicles, 15 pickup_spots - < 1 second
+- **Medium**: 10 vehicles, 30 pickup_spots - 1-3 seconds  
+- **Large**: 20+ vehicles, 50+ pickup_spots - 3-6 seconds
 
 ### Memory Usage
 - In-memory storage of configuration
-- Distance calculations scale O(n²) with depot count
+- Distance calculations scale O(n²) with pickup_spot count
 - Map rendering scales linearly with markers + routes
 
 ### Algorithm Performance

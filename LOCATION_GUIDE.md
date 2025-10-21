@@ -2,7 +2,7 @@
 
 ## How to Add Locations in SmartRoute
 
-There are **4 different ways** to add factory and depot locations in SmartRoute:
+There are **4 different ways** to add factory and pickup_spot locations in SmartRoute:
 
 ---
 
@@ -15,13 +15,13 @@ There are **4 different ways** to add factory and depot locations in SmartRoute:
 4. Click **"Save Factory"** or **"Set Factory Location"**
 5. Factory appears as a **red marker** 🏭 on the map
 
-### For Depot Locations:
-1. Go to **Depots** tab
+### For PickupSpot Locations:
+1. Go to **PickupSpots** tab
 2. **Click on the map** for each pickup point
-3. Enter depot name (e.g., "Shalimar", "DHA Phase 5")
+3. Enter pickup_spot name (e.g., "Shalimar", "DHA Phase 5")
 4. Enter number of workers at that location
-5. Click **"Add Depot"**
-6. Depot appears as a **blue marker** 📍 on the map
+5. Click **"Add PickupSpot"**
+6. PickupSpot appears as a **blue marker** 📍 on the map
 
 ---
 
@@ -33,10 +33,10 @@ There are **4 different ways** to add factory and depot locations in SmartRoute:
 - Need precise location placement
 
 ### Steps:
-1. In the **Factory** or **Depots** tab, find the coordinate input fields
+1. In the **Factory** or **PickupSpots** tab, find the coordinate input fields
 2. Enter **Latitude** and **Longitude** (decimal format)
-3. Enter location name and worker count (for depots)
-4. Click **"Save Factory"** or **"Add Depot"**
+3. Enter location name and worker count (for pickup_spots)
+4. Click **"Save Factory"** or **"Add PickupSpot"**
 
 ### Coordinate Examples:
 ```
@@ -67,14 +67,14 @@ Islamabad Center: 33.684400, 73.047900
 - Choose central, accessible location
 - Consider traffic patterns for vehicle access
 - Ensure adequate parking space for fleet
-- Should be reachable from all depot areas
+- Should be reachable from all pickup_spot areas
 
-### ✅ **Depot Location Tips:**
+### ✅ **PickupSpot Location Tips:**
 - Select residential areas where employees live
-- Group nearby employees into single depots
+- Group nearby employees into single pickup_spots
 - Consider road accessibility for vehicles
 - Account for peak hour traffic conditions
-- Typical worker counts: 10-30 per depot
+- Typical worker counts: 10-30 per pickup_spot
 
 ### ✅ **Coordinate Accuracy:**
 - Use **6 decimal places** for best accuracy (~1 meter precision)
@@ -85,7 +85,7 @@ Islamabad Center: 33.684400, 73.047900
 
 ## 🚨 **Common Issues & Solutions**
 
-### **"Depot with this name already exists"**
+### **"PickupSpot with this name already exists"**
 - **Solution**: Use unique names (add area suffix: "Main Market - Gulberg")
 
 ### **"Click on map not working"**
@@ -108,15 +108,15 @@ Islamabad Center: 33.684400, 73.047900
 3. Re-enter coordinates or click new location on map
 4. Save changes
 
-### **Edit Depots:**
-1. Go to **Depots** tab
-2. Find the depot in the list
-3. Click **"Edit"** button next to the depot
+### **Edit PickupSpots:**
+1. Go to **PickupSpots** tab
+2. Find the pickup_spot in the list
+3. Click **"Edit"** button next to the pickup_spot
 4. Modify name, worker count, or location
 5. Click **"Save Changes"**
 
 ### **Delete Locations:**
-- **Depots**: Click **"Delete"** button next to the depot in the list
+- **PickupSpots**: Click **"Delete"** button next to the pickup_spot in the list
 - **Factory**: Click **"Clear Factory"** button in Factory tab
 
 ---
@@ -132,7 +132,7 @@ Industrial Estate: 31.469700, 74.272800
 Sundar Industrial: 31.569700, 74.302800
 ```
 
-### **Depot Options:**
+### **PickupSpot Options:**
 ```
 Shalimar: 31.604500, 74.356700 (25 workers)
 DHA Phase 5: 31.469700, 74.407800 (18 workers)  
@@ -147,10 +147,10 @@ Johar Town: 31.451100, 74.261100 (30 workers)
 
 1. **Verify on Map**: Check that all markers appear correctly
 2. **Add Vehicles**: Go to **Vehicles** tab and add your fleet
-3. **Review Configuration**: Ensure factory, vehicles, and depots are all set
+3. **Review Configuration**: Ensure factory, vehicles, and pickup_spots are all set
 4. **Run Optimization**: Go to **Optimization** tab
 5. **Click "Optimize Routes"**: Generate optimal routes
-6. **View Routes on Map**: See color-coded routes connecting factory to depots
+6. **View Routes on Map**: See color-coded routes connecting factory to pickup_spots
 
 Need help with any specific location or having issues? The application shows helpful error messages! 🤝
 

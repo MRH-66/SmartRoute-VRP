@@ -23,7 +23,7 @@
   - Real road routing: Enabled (Haversine distance)
   - Cost minimization: Active
   - Vehicle penalty: 1000 PKR per vehicle
-  - No depot splitting
+  - No pickup_spot splitting
 
 ### 3. **Visual Route Mapping** ✅
 - **Colored polylines** for each vehicle route
@@ -80,7 +80,7 @@ function visualizeRoutesOnMap(result) {
   clearRoutes();
   
   // For each route:
-  //   1. Create colored polyline from factory through depots back to factory
+  //   1. Create colored polyline from factory through pickup_spots back to factory
   //   2. Add popup with vehicle name, distance, workers, cost
   //   3. Store polyline for cleanup
   
@@ -122,7 +122,7 @@ function visualizeRoutesOnMap(result) {
 
 ### Route Popups
 - **Vehicle name** with capacity info
-- **Depots visited** with worker counts
+- **PickupSpots visited** with worker counts
 - **Distance** in km (2 decimals)
 - **Total cost** in PKR
 - **Clean formatting** with icons
@@ -135,14 +135,14 @@ function visualizeRoutesOnMap(result) {
 - ✅ ALNS optimization (100 iterations)
 - ✅ Greedy initial solution
 - ✅ Route consolidation
-- ✅ No depot splitting (one vehicle per depot)
+- ✅ No pickup_spot splitting (one vehicle per pickup_spot)
 - ✅ Haversine distance calculation
 
 ## Testing
 
 ### Quick Test
 1. Open http://localhost:8000
-2. Add factory, vehicles, depots
+2. Add factory, vehicles, pickup_spots
 3. Click "Optimize Routes"
 4. See routes appear on map with colors
 5. Click on route lines to see details
@@ -150,7 +150,7 @@ function visualizeRoutesOnMap(result) {
 ### Expected Results
 - Routes appear as colored lines on map
 - Each vehicle has different color
-- Routes show factory → depots → factory
+- Routes show factory → pickup_spots → factory
 - Popups show detailed route information
 - Map automatically zooms to fit all routes
 

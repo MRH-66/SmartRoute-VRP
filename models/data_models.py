@@ -103,9 +103,19 @@ class RouteStop:
     cumulative_load: int = 0  # Total workers in vehicle after this stop
     pickup_details: Optional[str] = None  # Additional pickup information
     
+@dataclass
+class RouteStep:
+    """Turn-by-turn navigation step"""
+    instruction: str
+    distance_km: float
+    duration_min: float
+    type: str  # turn, depart, arrive, etc.
+    modifier: str  # left, right, straight, etc.
+    street_name: str = ""
+    
 @dataclass 
 class RouteSegment:
-    """Road segment between two points"""
+    """Road segment between two points with turn-by-turn directions"""
     from_lat: float
     from_lng: float
     to_lat: float
@@ -113,6 +123,7 @@ class RouteSegment:
     distance_km: float
     duration_minutes: float
     waypoints: List[Tuple[float, float]] = field(default_factory=list)  # GPS coordinates along route
+    steps: List[RouteStep] = field(default_factory=list)  # Turn-by-turn instructions
 
 @dataclass
 class OptimizedRoute:
@@ -161,7 +172,18 @@ class OptimizedRoute:
                     'to_lng': seg.to_lng,
                     'distance_km': seg.distance_km,
                     'duration_minutes': seg.duration_minutes,
-                    'waypoints': seg.waypoints
+                    'waypoints': seg.waypoints,
+                    'steps': [
+                        {
+                            'instruction': step.instruction,
+                            'distance_km': step.distance_km,
+                            'duration_min': step.duration_min,
+                            'type': step.type,
+                            'modifier': step.modifier,
+                            'street_name': step.street_name
+                        }
+                        for step in seg.steps
+                    ] if seg.steps else []
                 }
                 for seg in self.route_segments
             ]

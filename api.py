@@ -99,7 +99,7 @@ class OptimizationRequest(BaseModel):
     use_real_roads: bool = Field(default=True)
 
 class BulkDepotRequest(BaseModel):
-    depots: List[DepotRequest]
+    pickup_spots: List[DepotRequest]
 
 class BulkVehicleRequest(BaseModel):
     vehicles: List[BulkVehicleItem]
@@ -144,7 +144,7 @@ async def get_configuration(session_id: str = "default"):
     return {
         "factory": config.factory.to_dict() if config.factory else None,
         "vehicles": [v.to_dict() for v in config.vehicles],
-        "depots": [d.to_dict() for d in config.depots],
+        "pickup_spots": [d.to_dict() for d in config.depots],
         "is_complete": config.is_complete(),
         "progress_step": config.get_progress_step()
     }
@@ -327,10 +327,10 @@ async def delete_vehicle(vehicle_id: str, session_id: str = "default"):
     config.vehicles = [v for v in config.vehicles if v.id != vehicle_id]
     return {"message": f"Vehicle '{vehicle.name}' deleted"}
 
-# Depot endpoints
-@app.post("/api/depots/{session_id}", response_model=DepotResponse)
+# PickupSpot endpoints
+@app.post("/api/pickup_spots/{session_id}", response_model=DepotResponse)
 async def add_depot(depot_data: DepotRequest, session_id: str = "default"):
-    """Add a single depot"""
+    """Add a single pickup_spot"""
     config = get_session_config(session_id)
     
     # Check for duplicate names
@@ -356,15 +356,15 @@ async def add_depot(depot_data: DepotRequest, session_id: str = "default"):
         worker_count=depot.worker_count
     )
 
-@app.post("/api/depots/{session_id}/bulk", response_model=List[DepotResponse])
+@app.post("/api/pickup_spots/{session_id}/bulk", response_model=List[DepotResponse])
 async def add_multiple_depots(depots_data: BulkDepotRequest, session_id: str = "default"):
-    """Add multiple depots at once"""
+    """Add multiple pickup_spots at once"""
     config = get_session_config(session_id)
     
     existing_names = [d.name for d in config.depots]
     new_depots = []
     
-    for depot_data in depots_data.depots:
+    for depot_data in depots_data.pickup_spots:
         if depot_data.name in existing_names:
             raise HTTPException(status_code=400, detail=f"Depot name '{depot_data.name}' already exists")
         
@@ -389,9 +389,9 @@ async def add_multiple_depots(depots_data: BulkDepotRequest, session_id: str = "
     
     return new_depots
 
-@app.get("/api/depots/{session_id}", response_model=List[DepotResponse])
+@app.get("/api/pickup_spots/{session_id}", response_model=List[DepotResponse])
 async def get_depots(session_id: str = "default"):
-    """Get all depots"""
+    """Get all pickup_spots"""
     config = get_session_config(session_id)
     
     return [
@@ -405,44 +405,44 @@ async def get_depots(session_id: str = "default"):
         for d in config.depots
     ]
 
-@app.put("/api/depots/{session_id}/{depot_id}", response_model=DepotResponse)
-async def update_depot(depot_id: str, depot_data: DepotRequest, session_id: str = "default"):
-    """Update a depot"""
+@app.put("/api/pickup_spots/{session_id}/{spot_id}", response_model=DepotResponse)
+async def update_depot(spot_id: str, depot_data: DepotRequest, session_id: str = "default"):
+    """Update a pickup_spot"""
     config = get_session_config(session_id)
     
-    depot = next((d for d in config.depots if d.id == depot_id), None)
-    if not depot:
-        raise HTTPException(status_code=404, detail="Depot not found")
+    pickup_spot = next((d for d in config.depots if d.id == spot_id), None)
+    if not pickup_spot:
+        raise HTTPException(status_code=404, detail="PickupSpot not found")
     
-    # Check for duplicate names (excluding current depot)
-    existing_names = [d.name for d in config.depots if d.id != depot_id]
+    # Check for duplicate names (excluding current pickup_spot)
+    existing_names = [d.name for d in config.depots if d.id != spot_id]
     if depot_data.name in existing_names:
-        raise HTTPException(status_code=400, detail="Depot name already exists")
+        raise HTTPException(status_code=400, detail="PickupSpot name already exists")
     
-    depot.name = depot_data.name
-    depot.latitude = depot_data.latitude
-    depot.longitude = depot_data.longitude
-    depot.worker_count = depot_data.worker_count
+    pickup_spot.name = depot_data.name
+    pickup_spot.latitude = depot_data.latitude
+    pickup_spot.longitude = depot_data.longitude
+    pickup_spot.worker_count = depot_data.worker_count
     
     return DepotResponse(
-        id=depot.id,
-        name=depot.name,
-        latitude=depot.latitude,
-        longitude=depot.longitude,
-        worker_count=depot.worker_count
+        id=pickup_spot.id,
+        name=pickup_spot.name,
+        latitude=pickup_spot.latitude,
+        longitude=pickup_spot.longitude,
+        worker_count=pickup_spot.worker_count
     )
 
-@app.delete("/api/depots/{session_id}/{depot_id}")
-async def delete_depot(depot_id: str, session_id: str = "default"):
-    """Delete a depot"""
+@app.delete("/api/pickup_spots/{session_id}/{spot_id}")
+async def delete_depot(spot_id: str, session_id: str = "default"):
+    """Delete a pickup_spot"""
     config = get_session_config(session_id)
     
-    depot = next((d for d in config.depots if d.id == depot_id), None)
-    if not depot:
-        raise HTTPException(status_code=404, detail="Depot not found")
+    pickup_spot = next((d for d in config.depots if d.id == spot_id), None)
+    if not pickup_spot:
+        raise HTTPException(status_code=404, detail="PickupSpot not found")
     
-    config.depots = [d for d in config.depots if d.id != depot_id]
-    return {"message": f"Depot '{depot.name}' deleted"}
+    config.depots = [d for d in config.depots if d.id != spot_id]
+    return {"message": f"PickupSpot '{pickup_spot.name}' deleted"}
 
 # Optimization endpoint
 @app.post("/api/optimize/{session_id}")
@@ -457,7 +457,7 @@ async def optimize_routes(optimization_data: OptimizationRequest, session_id: st
         if not config.vehicles:
             missing.append("vehicles")
         if not config.depots:
-            missing.append("depots")
+            missing.append("pickup_spots")
         
         raise HTTPException(
             status_code=400, 
@@ -466,11 +466,11 @@ async def optimize_routes(optimization_data: OptimizationRequest, session_id: st
     
     try:
         # Debug info
-        print(f"Starting optimization with {len(config.vehicles)} vehicles and {len(config.depots)} depots")
+        print(f"Starting optimization with {len(config.vehicles)} vehicles and {len(config.depots)} pickup_spots")
         for vehicle in config.vehicles:
             print(f"Vehicle: {vehicle.name}, Capacity: {vehicle.capacity}")
-        for depot in config.depots:
-            print(f"Depot: {depot.name}, Workers: {depot.worker_count}")
+        for pickup_spot in config.depots:
+            print(f"PickupSpot: {pickup_spot.name}, Workers: {pickup_spot.worker_count}")
             
         # Run optimization with Advanced Solver (only algorithm available)
         print(f"Using Advanced Solver with cost optimization and smart depot assignment")

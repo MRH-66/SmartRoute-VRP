@@ -22,9 +22,9 @@ This document outlines the major improvements made to fix critical optimization 
    - **Example**: Coaster with 27 capacity carrying 35 workers
    - **Impact**: Physically impossible routes, safety violations
 
-### 2. **Inefficient Depot Splitting**
-   - **Issue**: Multiple vehicles visiting same depot when one vehicle would suffice
-   - **Example**: Shahdrah depot (27 workers) visited by 4 vehicles instead of 1 Coster (27 capacity)
+### 2. **Inefficient PickupSpot Splitting**
+   - **Issue**: Multiple vehicles visiting same pickup_spot when one vehicle would suffice
+   - **Example**: Shahdrah pickup_spot (27 workers) visited by 4 vehicles instead of 1 Coster (27 capacity)
    - **Impact**: Wasted resources, unnecessary fuel costs, complexity
 
 ### 3. **Poor Vehicle Utilization**
@@ -62,17 +62,17 @@ if current_load + worker_count <= vehicle.capacity:  # No violations
 - **Acceptance Criteria**: Simulated annealing-style improvement
 - **Route Consolidation**: Post-optimization vehicle minimization
 
-#### **2. Smart Depot Assignment**
-- **Single Vehicle Priority**: Always attempt to serve each depot with one vehicle
-- **Depot Splitting**: Only split when necessary (depot workers > largest vehicle capacity)
+#### **2. Smart PickupSpot Assignment**
+- **Single Vehicle Priority**: Always attempt to serve each pickup_spot with one vehicle
+- **PickupSpot Splitting**: Only split when necessary (pickup_spot workers > largest vehicle capacity)
 - **Cost-Based Selection**: Choose most cost-efficient vehicle that fits
 
 **Algorithm**:
 ```
-For each depot:
+For each pickup_spot:
   1. Try to find ONE vehicle that can carry all workers
   2. Select the cheapest vehicle that fits (minimize cost)
-  3. Only split depot if NO single vehicle has enough capacity
+  3. Only split pickup_spot if NO single vehicle has enough capacity
   4. When splitting, use minimum number of vehicles needed
 ```
 
@@ -90,16 +90,16 @@ Savings: 75% cost reduction + 75% vehicle penalty reduction
 ```
 
 #### **4. ALNS Algorithm Flow**
-- **Phase 1**: Greedy initial solution (assign depots to nearest vehicles)
+- **Phase 1**: Greedy initial solution (assign pickup_spots to nearest vehicles)
 - **Phase 2**: ALNS iterations (destroy 20-40% of routes, repair with best insertion)
 - **Phase 3**: Route consolidation (merge compatible routes, minimize vehicles)
 - **Phase 4**: Final validation (check all capacity constraints)
 
-**Depot Splitting Logic**:
+**PickupSpot Splitting Logic**:
 ```python
-# Each depot is assigned to ONE vehicle
-# No depot splitting - simplifies operations
-# If depot > vehicle capacity, use largest available vehicle
+# Each pickup_spot is assigned to ONE vehicle
+# No pickup_spot splitting - simplifies operations
+# If pickup_spot > vehicle capacity, use largest available vehicle
 # Log warning if assignment violates capacity
 ```
 
@@ -108,7 +108,7 @@ Savings: 75% cost reduction + 75% vehicle penalty reduction
 - **Different colors** for each vehicle route
 - **Interactive popups** showing:
   - Vehicle name and capacity
-  - Depots visited
+  - PickupSpots visited
   - Workers carried
   - Distance and cost
 - **Automatic map fitting** to show all routes
@@ -116,7 +116,7 @@ Savings: 75% cost reduction + 75% vehicle penalty reduction
 #### **6. Enhanced Logging and Analysis**
 - Per-route capacity utilization percentages
 - Cost breakdown (per-vehicle and total)
-- Depot assignment analysis (single vs split)
+- PickupSpot assignment analysis (single vs split)
 - Vehicle efficiency metrics
 - Unused vehicle warnings
 
@@ -129,8 +129,8 @@ Route 1 (Coster - 27 cap):
 Analysis:
   Total Cost: PKR 450.75
   Avg Utilization: 89.3%
-  Depots Split: 0
-  Single-Vehicle Depots: 12
+  PickupSpots Split: 0
+  Single-Vehicle PickupSpots: 12
 ```
 
 ## API Changes
@@ -178,7 +178,7 @@ POST /api/optimize
 
 ## Performance Comparison
 
-### Test Case: Shahdrah Depot (27 workers)
+### Test Case: Shahdrah PickupSpot (27 workers)
 
 | Metric | Before (Genetic) | After (ALNS) | Improvement |
 |--------|------------------|--------------|-------------|
@@ -187,12 +187,12 @@ POST /api/optimize
 | Total Cost | PKR 5,226 | PKR 1,076.50 | -79% |
 | Avg Utilization | 18.5% | 100% | +441% |
 | Capacity Violations | Yes (130%+) | No (0%) | ✅ Fixed |
-| Depot Splits | 1 (unnecessary) | 0 | ✅ Optimal |
+| PickupSpot Splits | 1 (unnecessary) | 0 | ✅ Optimal |
 | Solve Time | 15-30s | 1-3s | -83% |
 
 ### Overall Improvements
 - ✅ **Zero capacity violations** (was: frequent)
-- ✅ **No depot splitting** (simplified operations)
+- ✅ **No pickup_spot splitting** (simplified operations)
 - ✅ **High vehicle utilization** (was: 3.7% - 18%)
 - ✅ **Cost-optimized routes** (79% cost reduction)
 - ✅ **Smart vehicle selection** (cheapest that fits)
@@ -253,7 +253,7 @@ cd /home/scientist/Solutyics/VRP
 python run.py
 
 # Navigate to http://localhost:8000
-# Add your data (factory, vehicles, depots)
+# Add your data (factory, vehicles, pickup_spots)
 # Click "Optimize Routes"
 # View color-coded routes on map
 ```
@@ -299,14 +299,14 @@ VRP/
 
 ## Algorithm Complexity
 
-- **Time Complexity**: O(n × m × i) where n = depots, m = vehicles, i = iterations (100)
+- **Time Complexity**: O(n × m × i) where n = pickup_spots, m = vehicles, i = iterations (100)
 - **Space Complexity**: O(n + m + r) where r = routes
 - **Optimization**: ALNS with greedy initialization
 
 ### Performance Benchmarks
-- Small (5 depots, 3 vehicles): <1s
-- Medium (20 depots, 10 vehicles): 1-3s
-- Large (50 depots, 20 vehicles): 3-6s
+- Small (5 pickup_spots, 3 vehicles): <1s
+- Medium (20 pickup_spots, 10 vehicles): 1-3s
+- Large (50 pickup_spots, 20 vehicles): 3-6s
 
 ## Contact
 

@@ -4,6 +4,7 @@ Advanced VRP Solver with Proper Optimization
 - Prevents unnecessary depot splitting
 - Optimizes vehicle selection
 - Uses ALNS (Adaptive Large Neighborhood Search) with Genetic Algorithm
+- Supports OSRM for real road routing
 """
 
 import random
@@ -14,9 +15,10 @@ import copy
 from geopy.distance import geodesic
 
 from models.data_models import (
-    Vehicle, Depot, Factory, OptimizedRoute, RouteStop, 
+    Vehicle, Depot, Factory, OptimizedRoute, RouteStop, RouteSegment, RouteStep,
     OptimizationResult, VehicleType
 )
+from utils.osrm_client import calculate_distance_with_osrm, get_route_with_geometry
 
 @dataclass
 class Assignment:
@@ -52,10 +54,11 @@ class AdvancedVRPSolver:
     - ALNS + Genetic Algorithm hybrid
     """
     
-    def __init__(self, factory: Factory, vehicles: List[Vehicle], depots: List[Depot]):
+    def __init__(self, factory: Factory, vehicles: List[Vehicle], depots: List[Depot], use_real_roads: bool = True):
         self.factory = factory
         self.vehicles = sorted(vehicles, key=lambda v: v.cost_per_km)  # Sort by cost efficiency
         self.depots = depots
+        self.use_real_roads = use_real_roads  # Use OSRM for real road distances
         
         # Precompute distances
         self.distances = self._compute_distances()
@@ -65,22 +68,31 @@ class AdvancedVRPSolver:
                       "#F7DC6F", "#BB8FCE", "#85C1E9", "#F8C471", "#82E0AA"]
     
     def _compute_distances(self) -> Dict:
-        """Precompute all distances"""
+        """Precompute all distances using OSRM if enabled"""
         distances = {}
         factory_pos = (self.factory.latitude, self.factory.longitude)
         
+        print(f"📍 Computing distances (use_real_roads={self.use_real_roads})...")
+        
         for depot in self.depots:
             depot_pos = (depot.latitude, depot.longitude)
-            distances[('factory', depot.id)] = geodesic(factory_pos, depot_pos).kilometers
+            distances[('factory', depot.id)] = calculate_distance_with_osrm(
+                self.factory.latitude, self.factory.longitude,
+                depot.latitude, depot.longitude,
+                use_osrm=self.use_real_roads
+            )
             
         for i, depot1 in enumerate(self.depots):
-            pos1 = (depot1.latitude, depot1.longitude)
             for depot2 in self.depots[i+1:]:
-                pos2 = (depot2.latitude, depot2.longitude)
-                dist = geodesic(pos1, pos2).kilometers
+                dist = calculate_distance_with_osrm(
+                    depot1.latitude, depot1.longitude,
+                    depot2.latitude, depot2.longitude,
+                    use_osrm=self.use_real_roads
+                )
                 distances[(depot1.id, depot2.id)] = dist
                 distances[(depot2.id, depot1.id)] = dist
-                
+        
+        print(f"✅ Distance computation complete\n")
         return distances
     
     def solve(self, generations: int = 200) -> Optional[OptimizationResult]:
@@ -298,6 +310,87 @@ class AdvancedVRPSolver:
         total_distance += self.distances.get(('factory', current), 0)
         
         return total_distance
+    
+    def _generate_route_segments(self, stops: List[RouteStop]) -> List[RouteSegment]:
+        """
+        Generate route segments with OSRM geometry for visualization
+        
+        Creates segments: Factory -> Depot1 -> Depot2 -> ... -> Factory
+        """
+        segments = []
+        
+        if not stops:
+            return segments
+        
+        # Build coordinate list: factory -> depots -> factory
+        coordinates = [(self.factory.latitude, self.factory.longitude)]
+        for stop in stops:
+            coordinates.append((stop.latitude, stop.longitude))
+        coordinates.append((self.factory.latitude, self.factory.longitude))
+        
+        # Get route data with geometry from OSRM
+        route_data = get_route_with_geometry(coordinates, use_osrm=self.use_real_roads)
+        
+        if not route_data or not route_data.get('geometry'):
+            # Fallback: create straight-line segments
+            for i in range(len(coordinates) - 1):
+                from_lat, from_lon = coordinates[i]
+                to_lat, to_lon = coordinates[i + 1]
+                
+                distance = calculate_distance_with_osrm(
+                    from_lat, from_lon, to_lat, to_lon, 
+                    use_osrm=False  # Use Haversine for fallback
+                )
+                
+                segment = RouteSegment(
+                    from_lat=from_lat,
+                    from_lng=from_lon,
+                    to_lat=to_lat,
+                    to_lng=to_lon,
+                    distance_km=distance,
+                    duration_minutes=(distance / 40.0) * 60.0,  # Assume 40 km/h
+                    waypoints=[[from_lon, from_lat], [to_lon, to_lat]]
+                )
+                segments.append(segment)
+        else:
+            # Use OSRM geometry and turn-by-turn steps
+            geometry = route_data['geometry']  # List of [lon, lat] pairs
+            legs = route_data.get('legs', [])
+            
+            # Keep geometry as [lon, lat] for proper OSRM format
+            # This matches what the frontend expects
+            waypoints = geometry  # Already in [lon, lat] format
+            
+            # Extract all turn-by-turn steps from all legs
+            all_steps = []
+            if legs:
+                for leg in legs:
+                    for step_data in leg.get('steps', []):
+                        step = RouteStep(
+                            instruction=step_data.get('instruction', 'Continue'),
+                            distance_km=step_data.get('distance_km', 0.0),
+                            duration_min=step_data.get('duration_min', 0.0),
+                            type=step_data.get('type', 'turn'),
+                            modifier=step_data.get('modifier', ''),
+                            street_name=step_data.get('name', '') + (' ' + step_data.get('ref', '') if step_data.get('ref') else '')
+                        )
+                        all_steps.append(step)
+            
+            # Create a single segment for the entire route with full geometry and steps
+            # (The frontend will draw the full polyline and display turn-by-turn)
+            segment = RouteSegment(
+                from_lat=coordinates[0][0],
+                from_lng=coordinates[0][1],
+                to_lat=coordinates[-1][0],
+                to_lng=coordinates[-1][1],
+                distance_km=route_data['distance_km'],
+                duration_minutes=route_data['duration_min'],
+                waypoints=waypoints,
+                steps=all_steps
+            )
+            segments.append(segment)
+        
+        return segments
     
     def _consolidate_routes(self, solution: Solution) -> Solution:
         """
@@ -548,6 +641,10 @@ class AdvancedVRPSolver:
             total_workers = sum(depot_workers.values())
             utilization = (total_workers / vehicle.capacity) * 100
             
+            # Generate route segments with OSRM geometry
+            route_segments = self._generate_route_segments(stops)
+            total_duration = sum(seg.duration_minutes for seg in route_segments)
+            
             route = OptimizedRoute(
                 vehicle_id=vehicle.id,
                 vehicle_name=vehicle.name,
@@ -557,7 +654,9 @@ class AdvancedVRPSolver:
                 total_cost=route_cost,
                 utilization_percent=utilization,
                 route_color=self.colors[i % len(self.colors)],
-                max_passengers=total_workers
+                max_passengers=total_workers,
+                route_segments=route_segments,
+                total_duration_minutes=total_duration
             )
             routes.append(route)
         
@@ -579,13 +678,14 @@ def solve_vrp_advanced(factory: Factory, vehicles: List[Vehicle], depots: List[D
     - Prefers single vehicle per depot
     - Smart vehicle selection
     - ALNS + Genetic Algorithm hybrid
+    - OSRM real road routing when enabled
     
     Args:
         factory: Factory location
         vehicles: Available vehicles
         depots: Pickup depots
-        use_real_roads: Whether to use real road distances (currently uses geodesic)
+        use_real_roads: Whether to use OSRM for real road distances (True) or Haversine (False)
         generations: Number of optimization iterations
     """
-    solver = AdvancedVRPSolver(factory, vehicles, depots)
+    solver = AdvancedVRPSolver(factory, vehicles, depots, use_real_roads=use_real_roads)
     return solver.solve(generations=generations)

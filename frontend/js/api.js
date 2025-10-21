@@ -82,24 +82,24 @@ class SmartRouteAPI {
     }
 
     // Depot endpoints
-    async addDepot(depotData) {
-        return await this.request(`/depots/${this.sessionId}`, 'POST', depotData);
+    async addDepot(spotData) {
+        return await this.request(`/pickup_spots/${this.sessionId}`, 'POST', spotData);
     }
 
-    async addBulkDepots(depotsData) {
-        return await this.request(`/depots/${this.sessionId}/bulk`, 'POST', { depots: depotsData });
+    async addBulkDepots(spotsData) {
+        return await this.request(`/pickup_spots/${this.sessionId}/bulk`, 'POST', { pickup_spots: spotsData });
     }
 
     async getDepots() {
-        return await this.request(`/depots/${this.sessionId}`);
+        return await this.request(`/pickup_spots/${this.sessionId}`);
     }
 
-    async updateDepot(depotId, depotData) {
-        return await this.request(`/depots/${this.sessionId}/${depotId}`, 'PUT', depotData);
+    async updateDepot(depotId, spotData) {
+        return await this.request(`/pickup_spots/${this.sessionId}/${depotId}`, 'PUT', spotData);
     }
 
     async deleteDepot(depotId) {
-        return await this.request(`/depots/${this.sessionId}/${depotId}`, 'DELETE');
+        return await this.request(`/pickup_spots/${this.sessionId}/${depotId}`, 'DELETE');
     }
 
     // Optimization endpoints
@@ -202,22 +202,22 @@ function validateVehicle(vehicleData) {
     return errors;
 }
 
-function validateDepot(depotData) {
+function validateDepot(spotData) {
     const errors = [];
     
-    if (!depotData.name || depotData.name.trim().length === 0) {
+    if (!spotData.name || spotData.name.trim().length === 0) {
         errors.push('Depot name is required');
     }
     
-    if (!depotData.latitude || depotData.latitude < -90 || depotData.latitude > 90) {
+    if (!spotData.latitude || spotData.latitude < -90 || spotData.latitude > 90) {
         errors.push('Valid latitude is required (-90 to 90)');
     }
     
-    if (!depotData.longitude || depotData.longitude < -180 || depotData.longitude > 180) {
+    if (!spotData.longitude || spotData.longitude < -180 || spotData.longitude > 180) {
         errors.push('Valid longitude is required (-180 to 180)');
     }
     
-    if (!depotData.worker_count || depotData.worker_count < 1 || depotData.worker_count > 500) {
+    if (!spotData.worker_count || spotData.worker_count < 1 || spotData.worker_count > 500) {
         errors.push('Worker count must be between 1 and 500');
     }
     

@@ -8,7 +8,7 @@ let appState = {
     config: null,
     maps: {},
     vehicleFormCount: 0,
-    depotFormCount: 0
+    spotFormCount: 0
 };
 
 // Route colors for visualization
@@ -68,7 +68,7 @@ async function saveConfiguration() {
 
 // Progress steps management
 function updateProgressSteps() {
-    const steps = ['factory', 'vehicles', 'depots', 'optimize'];
+    const steps = ['factory', 'vehicles', 'pickup-spots', 'optimize'];
     const currentStep = appState.config.progress_step;
     
     steps.forEach((step, index) => {
@@ -147,13 +147,13 @@ function updateDepotStatus() {
     const statusElement = document.getElementById('depot-status');
     if (!statusElement) return;
     
-    if (appState.config.depots.length > 0) {
-        const totalWorkers = appState.config.depots.reduce((sum, d) => sum + d.worker_count, 0);
+    if (appState.config.pickup_spots.length > 0) {
+        const totalWorkers = appState.config.pickup_spots.reduce((sum, d) => sum + d.worker_count, 0);
         
         statusElement.className = 'status-set';
         statusElement.innerHTML = `
             <i class="fas fa-check-circle"></i> 
-            ${appState.config.depots.length} depots
+            ${appState.config.pickup_spots.length} depots
             <br><small>${totalWorkers} total workers</small>
         `;
     } else {
@@ -201,12 +201,12 @@ function updateQuickActions() {
                 </button>
             </div>
         `;
-    } else if (appState.config.depots.length === 0) {
+    } else if (appState.config.pickup_spots.length === 0) {
         html = `
             <div class="alert alert-warning">
                 <h6><i class="fas fa-exclamation-triangle"></i> Next Step</h6>
                 <p>Map pickup locations</p>
-                <button class="btn btn-primary" onclick="switchToTab('depots-tab')">
+                <button class="btn btn-primary" onclick="switchToTab('pickup-spots-tab')">
                     <i class="fas fa-map-marker-alt"></i> Add Depots
                 </button>
             </div>
@@ -242,10 +242,10 @@ function initializeMaps() {
         }
     }
     
-    // Depot map
+    // PickupSpot map
     if (!appState.maps.depot) {
-        const depotMapElement = document.getElementById('depot-map');
-        if (depotMapElement) {
+        const spotMapElement = document.getElementById('depot-map');
+        if (spotMapElement) {
             appState.maps.depot = L.map('depot-map').setView([31.5204, 74.3587], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(appState.maps.depot);
             
@@ -304,15 +304,15 @@ function updateMapMarkers() {
     }
     
     // Add depot markers
-    appState.config.depots.forEach(depot => {
-        const depotIcon = L.divIcon({
+    appState.config.pickup_spots.forEach(depot => {
+        const spotIcon = L.divIcon({
             html: '<i class="fas fa-users" style="color: blue; font-size: 16px;"></i>',
             iconSize: [25, 25],
             className: 'custom-div-icon'
         });
         
         if (appState.maps.depot) {
-            L.marker([depot.latitude, depot.longitude], {icon: depotIcon})
+            L.marker([depot.latitude, depot.longitude], {icon: spotIcon})
                 .addTo(appState.maps.depot)
                 .bindPopup(`📍 ${depot.name}<br>👥 ${depot.worker_count} workers`);
         }
@@ -343,7 +343,7 @@ function setupEventListeners() {
                 case 'vehicles':
                     loadVehicles();
                     break;
-                case 'depots':
+                case 'pickup-spots':
                     loadDepots();
                     break;
                 case 'factory':
@@ -736,11 +736,11 @@ function updateDepotSummary(depots) {
     summaryElement.innerHTML = `
         <div class="card">
             <div class="card-body">
-                <h6><i class="fas fa-map-marker-alt"></i> Depot Summary</h6>
+                <h6><i class="fas fa-map-marker-alt"></i> PickupSpot Summary</h6>
                 <div class="row text-center">
                     <div class="col-6">
                         <h4>${depots.length}</h4>
-                        <small>Total Depots</small>
+                        <small>Total PickupSpots</small>
                     </div>
                     <div class="col-6">
                         <h4>${totalWorkers}</h4>
@@ -762,7 +762,7 @@ function updateDepotList(depots) {
         listElement.innerHTML = `
             <div class="alert alert-info">
                 <h6><i class="fas fa-info-circle"></i> No depots configured</h6>
-                <p>Click on the map or use the "Add Depot" button to add pickup locations.</p>
+                <p>Click on the map or use the "Add PickupSpot" button to add pickup locations.</p>
             </div>
         `;
         return;
@@ -810,7 +810,7 @@ function setDepotLocation(lat, lng) {
     modal.show();
 }
 
-// Depot modal functions
+// PickupSpot modal functions
 function showAddDepotModal() {
     // Clear form
     document.getElementById('addDepotForm').reset();
@@ -821,23 +821,23 @@ function showAddDepotModal() {
 }
 
 async function addDepot() {
-    const depotData = {
+    const spotData = {
         name: document.getElementById('depotName').value,
         latitude: parseFloat(document.getElementById('depotLat').value),
         longitude: parseFloat(document.getElementById('depotLon').value),
         worker_count: parseInt(document.getElementById('depotWorkers').value)
     };
     
-    const errors = validateDepot(depotData);
+    const errors = validateDepot(spotData);
     if (errors.length > 0) {
         showError(errors.join(', '));
         return;
     }
     
     try {
-        await api.addDepot(depotData);
+        await api.addDepot(spotData);
         await saveConfiguration();
-        showSuccess(`Depot '${depotData.name}' added successfully`);
+        showSuccess(`Depot '${spotData.name}' added successfully`);
         
         // Close modal and reload
         bootstrap.Modal.getInstance(document.getElementById('addDepotModal')).hide();
@@ -849,7 +849,7 @@ async function addDepot() {
 
 // Bulk depot functions
 function showBulkDepotModal() {
-    appState.depotFormCount = 0;
+    appState.spotFormCount = 0;
     const formsContainer = document.getElementById('bulk-depot-forms');
     formsContainer.innerHTML = '';
     
@@ -864,7 +864,7 @@ function showBulkDepotModal() {
 
 function addDepotForm() {
     const formsContainer = document.getElementById('bulk-depot-forms');
-    const formIndex = appState.depotFormCount++;
+    const formIndex = appState.spotFormCount++;
     
     const formHtml = `
         <div class="bulk-form-item" id="depot-form-${formIndex}">
@@ -872,7 +872,7 @@ function addDepotForm() {
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Depot Name</label>
+                        <label class="form-label">PickupSpot Name</label>
                         <input type="text" class="form-control" name="name" placeholder="e.g., Shalimar">
                     </div>
                     <div class="mb-3">
@@ -907,36 +907,36 @@ function removeDepotForm(formIndex) {
 async function addBulkDepots() {
     const formsContainer = document.getElementById('bulk-depot-forms');
     const forms = formsContainer.querySelectorAll('.bulk-form-item');
-    const depotsData = [];
+    const spotsData = [];
     
     forms.forEach(form => {
         const inputs = form.querySelectorAll('input');
-        const depotData = {};
+        const spotData = {};
         
         inputs.forEach(input => {
             if (input.name && input.value.trim() !== '') {
                 if (input.type === 'number') {
-                    depotData[input.name] = parseFloat(input.value);
+                    spotData[input.name] = parseFloat(input.value);
                 } else {
-                    depotData[input.name] = input.value;
+                    spotData[input.name] = input.value;
                 }
             }
         });
         
         // Only add if all required fields are filled
-        if (depotData.name && depotData.latitude && depotData.longitude && depotData.worker_count) {
-            depotsData.push(depotData);
+        if (spotData.name && spotData.latitude && spotData.longitude && spotData.worker_count) {
+            spotsData.push(spotData);
         }
     });
     
-    if (depotsData.length === 0) {
+    if (spotsData.length === 0) {
         showError('Please fill in at least one complete depot form');
         return;
     }
     
     // Validate all depots
     const allErrors = [];
-    depotsData.forEach((depot, index) => {
+    spotsData.forEach((depot, index) => {
         const errors = validateDepot(depot);
         if (errors.length > 0) {
             allErrors.push(`Depot ${index + 1}: ${errors.join(', ')}`);
@@ -949,9 +949,9 @@ async function addBulkDepots() {
     }
     
     try {
-        await api.addBulkDepots(depotsData);
+        await api.addBulkDepots(spotsData);
         await saveConfiguration();
-        showSuccess(`${depotsData.length} depots added successfully`);
+        showSuccess(`${spotsData.length} depots added successfully`);
         
         // Close modal and reload
         bootstrap.Modal.getInstance(document.getElementById('bulkDepotModal')).hide();
@@ -969,7 +969,7 @@ async function deleteDepot(depotId) {
     try {
         await api.deleteDepot(depotId);
         await saveConfiguration();
-        showSuccess('Depot deleted successfully');
+        showSuccess('PickupSpot deleted successfully');
         loadDepots();
     } catch (error) {
         showError('Failed to delete depot: ' + error.message);
@@ -1009,13 +1009,17 @@ async function optimizeRoutes() {
         console.log('Optimization request:', requestData);
         const result = await api.optimizeRoutes(requestData);
         
+        // Store result in appState
+        appState.optimizationResult = result;
+        
         showSuccess('🎉 Routes optimized successfully!');
         displayOptimizationResults(result);
         
-        // Visualize routes on map
-        if (result.routes && result.routes.length > 0) {
-            visualizeRoutesOnMap(result);
-        }
+        // Don't visualize on depot map - only on Routes tab
+        // visualizeRoutesOnMap(result); // REMOVED
+        
+        // Update Routes tab
+        displayRoutesTab(result);
         
     } catch (error) {
         showError('Optimization failed: ' + error.message);
@@ -1157,7 +1161,7 @@ function visualizeRoutesOnMap(result) {
         const map = appState.maps.depot;
         
         if (!map) {
-            console.error('Depot map not initialized');
+            console.error('PickupSpot map not initialized');
             return;
         }
         
@@ -1194,22 +1198,40 @@ function visualizeRoutesOnMap(result) {
         const color = colors[index % colors.length];
         const routeCoords = [];
         
-        // Add factory as start point
-        if (appState.config.factory) {
-            routeCoords.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+        // Use OSRM geometry from route_segments if available
+        if (route.route_segments && route.route_segments.length > 0) {
+            // Collect all waypoints from all segments
+            route.route_segments.forEach(segment => {
+                if (segment.waypoints && segment.waypoints.length > 0) {
+                    segment.waypoints.forEach(wp => {
+                        // waypoints are [lon, lat] from OSRM, convert to [lat, lon] for Leaflet
+                        if (Array.isArray(wp) && wp.length === 2) {
+                            routeCoords.push([wp[1], wp[0]]);
+                        }
+                    });
+                }
+            });
         }
         
-        // Add all depot stops
-        route.stops.forEach(stop => {
-            const depot = appState.config.depots.find(d => d.name === stop.depot_name);
-            if (depot) {
-                routeCoords.push([depot.latitude, depot.longitude]);
+        // Fallback: use depot coordinates if no OSRM geometry available
+        if (routeCoords.length === 0) {
+            // Add factory as start point
+            if (appState.config.factory) {
+                routeCoords.push([appState.config.factory.latitude, appState.config.factory.longitude]);
             }
-        });
-        
-        // Return to factory
-        if (appState.config.factory) {
-            routeCoords.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+            
+            // Add all depot stops
+            route.stops.forEach(stop => {
+                const depot = appState.config.pickup_spots.find(d => d.name === stop.spot_name);
+                if (depot) {
+                    routeCoords.push([depot.latitude, depot.longitude]);
+                }
+            });
+            
+            // Return to factory
+            if (appState.config.factory) {
+                routeCoords.push([appState.config.factory.latitude, appState.config.factory.longitude]);
+            }
         }
         
         // Draw polyline for this route
@@ -1218,8 +1240,7 @@ function visualizeRoutesOnMap(result) {
                 color: color,
                 weight: 5,
                 opacity: 0.8,
-                smoothFactor: 1,
-                dashArray: '10, 10'
+                smoothFactor: 1
             }).addTo(map);
             
             // Add arrows to show direction (if decorator available)
@@ -1289,3 +1310,283 @@ function visualizeRoutesOnMap(result) {
         showError('Failed to visualize routes on map: ' + error.message);
     }
 }
+
+// ============================================================================
+// Routes Tab Functions
+// ============================================================================
+
+let routesMap = null;
+let routesMapInitialized = false;
+
+function initializeRoutesMap() {
+    if (routesMapInitialized) return;
+    
+    const mapElement = document.getElementById('routesMap');
+    if (!mapElement) return;
+    
+    // Initialize map centered on factory or default location
+    const centerLat = appState.config.factory ? appState.config.factory.latitude : 31.5204;
+    const centerLon = appState.config.factory ? appState.config.factory.longitude : 74.3587;
+    
+    routesMap = L.map('routesMap').setView([centerLat, centerLon], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(routesMap);
+    
+    // Add factory marker if available
+    if (appState.config.factory) {
+        const factoryIcon = L.divIcon({
+            html: '<i class="fas fa-industry" style="color: #dc3545; font-size: 24px;"></i>',
+            className: 'factory-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+        });
+        
+        L.marker([appState.config.factory.latitude, appState.config.factory.longitude], {
+            icon: factoryIcon
+        }).addTo(routesMap).bindPopup(`<b>${appState.config.factory.name}</b><br>Factory Location`);
+    }
+    
+    routesMapInitialized = true;
+    
+    // Force map to resize
+    setTimeout(() => {
+        routesMap.invalidateSize();
+    }, 100);
+}
+
+function displayRoutesTab(result) {
+    if (!result || !result.routes || result.routes.length === 0) {
+        document.getElementById('routes-empty-state').style.display = 'block';
+        document.getElementById('routes-map-container').style.display = 'none';
+        document.getElementById('fitRoutesBtn').style.display = 'none';
+        return;
+    }
+    
+    // Show routes container
+    document.getElementById('routes-empty-state').style.display = 'none';
+    document.getElementById('routes-map-container').style.display = 'block';
+    document.getElementById('fitRoutesBtn').style.display = 'inline-block';
+    
+    // Initialize map if needed
+    if (!routesMapInitialized) {
+        initializeRoutesMap();
+    }
+    
+    // Display routes on map
+    if (routesMap) {
+        displayRoutesOnMap(result, routesMap);
+    }
+    
+    // Update legend
+    updateRoutesLegend(result.routes);
+    
+    // Update details table
+    updateRoutesTable(result.routes);
+}
+
+function displayRoutesOnMap(result, map) {
+    if (window.routeVisualizer) {
+        window.routeVisualizer.clearRoutes(map);
+        window.routeVisualizer.displayRoutes(result.routes, map);
+        
+        // Fit map to show all routes
+        setTimeout(() => {
+            fitRoutesView();
+        }, 200);
+    }
+}
+
+function updateRoutesLegend(routes) {
+    const legendContainer = document.getElementById('routes-legend');
+    if (!legendContainer) return;
+    
+    let html = '';
+    routes.forEach((route, index) => {
+        const color = route.route_color || '#3388ff';
+        const totalWorkers = route.stops.reduce((sum, stop) => sum + stop.worker_count, 0);
+        
+        html += `
+            <div class="col-md-4 col-sm-6 mb-2">
+                <div class="d-flex align-items-center">
+                    <div style="width: 30px; height: 4px; background-color: ${color}; margin-right: 10px;"></div>
+                    <div>
+                        <strong>${route.vehicle_name}</strong><br>
+                        <small>${route.stops.length} stops • ${totalWorkers} workers</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    legendContainer.innerHTML = html;
+}
+
+function updateRoutesTable(routes) {
+    const tbody = document.getElementById('routes-details-body');
+    if (!tbody) return;
+    
+    let html = '';
+    routes.forEach((route, index) => {
+        const totalWorkers = route.stops.reduce((sum, stop) => sum + stop.worker_count, 0);
+        const duration = route.total_duration_minutes || (route.total_distance_km / 40 * 60); // Fallback to estimated duration
+        const utilizationClass = route.utilization_percent > 90 ? 'success' : 
+                                route.utilization_percent > 70 ? 'warning' : 'danger';
+        
+        html += `
+            <tr>
+                <td>
+                    <span style="color: ${route.route_color};">●</span>
+                    <strong>${route.vehicle_name}</strong>
+                    <br>
+                    <small class="text-muted">${route.vehicle_type}</small>
+                </td>
+                <td>${route.total_distance_km.toFixed(2)} km</td>
+                <td>${duration.toFixed(0)} min</td>
+                <td>PKR ${route.total_cost.toFixed(0)}</td>
+                <td>${route.stops.length}</td>
+                <td>${totalWorkers}</td>
+                <td>
+                    <span class="badge bg-${utilizationClass}">
+                        ${route.utilization_percent.toFixed(1)}%
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="showTurnByTurnDirections(${index})">
+                        <i class="fas fa-directions"></i> View Directions
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function showTurnByTurnDirections(routeIndex) {
+    if (!appState.optimizationResult || !appState.optimizationResult.routes) {
+        return;
+    }
+    
+    const route = appState.optimizationResult.routes[routeIndex];
+    if (!route) return;
+    
+    // Update vehicle name
+    const vehicleNameSpan = document.getElementById('selected-vehicle-name');
+    if (vehicleNameSpan) {
+        vehicleNameSpan.textContent = route.vehicle_name;
+    }
+    
+    // Get turn-by-turn steps from route segments
+    let allSteps = [];
+    if (route.route_segments && route.route_segments.length > 0) {
+        route.route_segments.forEach(segment => {
+            if (segment.steps && Array.isArray(segment.steps)) {
+                allSteps = allSteps.concat(segment.steps);
+            }
+        });
+    }
+    
+    // Display turn-by-turn directions
+    const directionsDiv = document.getElementById('turn-by-turn-directions');
+    const container = document.getElementById('turn-by-turn-container');
+    
+    if (!directionsDiv || !container) return;
+    
+    if (allSteps.length === 0) {
+        directionsDiv.innerHTML = '<div class="alert alert-info">No turn-by-turn directions available for this route.</div>';
+    } else {
+        let html = '<div class="list-group">';
+        
+        allSteps.forEach((step, index) => {
+            const icon = getManeuverIcon(step.type, step.modifier);
+            const streetInfo = step.street_name ? `on <strong>${step.street_name}</strong>` : '';
+            
+            html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 align-items-start">
+                        <div class="me-3 fs-4" style="min-width: 40px; text-align: center;">
+                            ${icon}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${step.instruction}</h6>
+                            ${streetInfo ? `<p class="mb-1 text-muted">${streetInfo}</p>` : ''}
+                            <small class="text-muted">
+                                ${step.distance_km ? `${(step.distance_km * 1000).toFixed(0)} m` : ''} 
+                                ${step.duration_min ? `• ${step.duration_min.toFixed(1)} min` : ''}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        directionsDiv.innerHTML = html;
+    }
+    
+    // Show container and scroll to it
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function getManeuverIcon(type, modifier) {
+    // Map OSRM maneuver types to icons
+    const iconMap = {
+        'turn': {
+            'left': '↰',
+            'right': '↱',
+            'slight left': '⬉',
+            'slight right': '⬈',
+            'sharp left': '⬅',
+            'sharp right': '➡',
+            'uturn': '⮌'
+        },
+        'depart': '🚗',
+        'arrive': '🏁',
+        'merge': '⮕',
+        'fork': '⑂',
+        'roundabout': '⭮',
+        'continue': '⬆',
+        'straight': '⬆'
+    };
+    
+    if (type === 'turn' && modifier && iconMap.turn[modifier]) {
+        return iconMap.turn[modifier];
+    }
+    
+    return iconMap[type] || '➤';
+}
+
+function fitRoutesView() {
+    if (!routesMap || !window.routeVisualizer || !window.routeVisualizer.routeLayers || window.routeVisualizer.routeLayers.length === 0) {
+        return;
+    }
+    
+    // Get all polyline layers
+    const polylines = window.routeVisualizer.routeLayers.filter(layer => layer instanceof L.Polyline);
+    
+    if (polylines.length > 0) {
+        const group = L.featureGroup(polylines);
+        routesMap.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+// Tab change listener to initialize map when Routes tab is shown
+document.addEventListener('shown.bs.tab', function (event) {
+    if (event.target.id === 'routes-tab') {
+        if (!routesMapInitialized) {
+            initializeRoutesMap();
+        } else if (routesMap) {
+            // Refresh map size
+            setTimeout(() => {
+                routesMap.invalidateSize();
+                if (appState.optimizationResult) {
+                    displayRoutesTab(appState.optimizationResult);
+                }
+            }, 100);
+        }
+    }
+});
