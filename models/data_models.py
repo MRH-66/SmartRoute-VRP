@@ -35,8 +35,8 @@ class Vehicle:
         )
 
 @dataclass
-class Depot:
-    """Employee pickup depot"""
+class PickupSpot:
+    """Employee pickup spot"""
     id: str
     name: str
     latitude: float
@@ -55,7 +55,7 @@ class Depot:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Depot':
+    def from_dict(cls, data: Dict[str, Any]) -> 'PickupSpot':
         return cls(
             id=data['id'],
             name=data['name'],
@@ -66,7 +66,7 @@ class Depot:
         )
     
     def can_be_split(self) -> bool:
-        """Check if this depot can be visited by multiple vehicles"""
+        """Check if this pickup spot can be visited by multiple vehicles"""
         return self.max_pickup_per_vehicle is not None and self.worker_count > self.max_pickup_per_vehicle
 
 @dataclass
@@ -94,8 +94,8 @@ class Factory:
 @dataclass
 class RouteStop:
     """Individual stop in a route"""
-    depot_id: str
-    depot_name: str
+    pickupspot_id: str
+    pickupspot_name: str
     latitude: float
     longitude: float
     worker_count: int  # Workers picked up at this stop
@@ -147,8 +147,8 @@ class OptimizedRoute:
             'vehicle_type': self.vehicle_type.value,
             'stops': [
                 {
-                    'depot_id': stop.depot_id,
-                    'depot_name': stop.depot_name,
+                    'pickupspot_id': stop.pickupspot_id,
+                    'pickupspot_name': stop.pickupspot_name,
                     'latitude': stop.latitude,
                     'longitude': stop.longitude,
                     'worker_count': stop.worker_count,
@@ -196,7 +196,7 @@ class OptimizationResult:
     total_distance: float
     total_cost: float
     total_vehicles_used: int
-    unassigned_depots: List[str] = field(default_factory=list)
+    unassigned_pickupspots: List[str] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -204,7 +204,7 @@ class OptimizationResult:
             'total_distance': self.total_distance,
             'total_cost': self.total_cost,
             'total_vehicles_used': self.total_vehicles_used,
-            'unassigned_depots': self.unassigned_depots
+            'unassigned_pickupspots': self.unassigned_pickupspots
         }
 
 @dataclass
@@ -212,7 +212,7 @@ class AppConfiguration:
     """Complete application configuration"""
     factory: Optional[Factory] = None
     vehicles: List[Vehicle] = field(default_factory=list)
-    depots: List[Depot] = field(default_factory=list)
+    pickupspots: List[PickupSpot] = field(default_factory=list)
     optimization_result: Optional[OptimizationResult] = None
     
     def is_complete(self) -> bool:
@@ -220,7 +220,7 @@ class AppConfiguration:
         return (
             self.factory is not None and
             len(self.vehicles) > 0 and
-            len(self.depots) > 0
+            len(self.pickupspots) > 0
         )
     
     def get_progress_step(self) -> int:
@@ -229,7 +229,7 @@ class AppConfiguration:
             return 1
         elif len(self.vehicles) == 0:
             return 2
-        elif len(self.depots) == 0:
+        elif len(self.pickupspots) == 0:
             return 3
         else:
             return 4
@@ -238,6 +238,6 @@ class AppConfiguration:
         return {
             'factory': self.factory.to_dict() if self.factory else None,
             'vehicles': [vehicle.to_dict() for vehicle in self.vehicles],
-            'depots': [depot.to_dict() for depot in self.depots],
+            'pickupspots': [pickupspot.to_dict() for pickupspot in self.pickupspots],
             'optimization_result': self.optimization_result.to_dict() if self.optimization_result else None
         }

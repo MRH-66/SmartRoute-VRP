@@ -34,7 +34,7 @@ def export_results_to_csv(result: OptimizationResult) -> str:
             'Number_of_Stops': len(route.stops),
             'Total_Workers': sum(stop.worker_count for stop in route.stops),
             'Utilization_Percent': round(route.utilization_percent, 1),
-            'Route_Sequence': ' → '.join([stop.depot_name for stop in route.stops])
+            'Route_Sequence': ' → '.join([stop.pickupspot_name for stop in route.stops])
         }
         route_data.append(route_info)
     
@@ -49,8 +49,8 @@ def export_results_to_csv(result: OptimizationResult) -> str:
             stop_info = {
                 'Vehicle_Name': route.vehicle_name,
                 'Stop_Order': stop.arrival_order,
-                'Depot_Name': stop.depot_name,
-                'Depot_ID': stop.depot_id,
+                'PickupSpot_Name': stop.pickupspot_name,
+                'PickupSpot_ID': stop.pickupspot_id,
                 'Workers_Count': stop.worker_count,
                 'Latitude': stop.latitude,
                 'Longitude': stop.longitude
@@ -66,14 +66,14 @@ def export_results_to_csv(result: OptimizationResult) -> str:
             'Total Cost (PKR)',
             'Vehicles Used',
             'Total Vehicles Available',
-            'Unassigned Depots'
+            'Unassigned Pickup Spots'
         ],
         'Value': [
             round(result.total_distance, 2),
             round(result.total_cost, 2),
             result.total_vehicles_used,
             len(route_data) + (len(result.routes) if hasattr(result, 'total_vehicles_available') else 0),
-            len(result.unassigned_depots)
+            len(result.unassigned_pickupspots)
         ]
     }
     df_summary = pd.DataFrame(summary_data)
@@ -100,11 +100,11 @@ def export_results_to_csv(result: OptimizationResult) -> str:
     output.write("# DETAILED STOPS\n")
     df_stops.to_csv(output, index=False)
     
-    # Add unassigned depots if any
-    if result.unassigned_depots:
-        output.write("\n# UNASSIGNED DEPOTS\n")
-        for depot in result.unassigned_depots:
-            output.write(f"{depot}\n")
+    # Add unassigned pickup spots if any
+    if result.unassigned_pickupspots:
+        output.write("\n# UNASSIGNED PICKUP SPOTS\n")
+        for pickupspot in result.unassigned_pickupspots:
+            output.write(f"{pickupspot}\n")
     
     return output.getvalue()
 
@@ -157,8 +157,8 @@ def export_results_to_pdf(result: OptimizationResult, config: AppConfiguration) 
         ['Factory Location', config.factory.name if config.factory else 'Not set'],
         ['Factory Coordinates', f"{config.factory.latitude:.4f}, {config.factory.longitude:.4f}" if config.factory else 'N/A'],
         ['Total Vehicles', str(len(config.vehicles))],
-        ['Total Depots', str(len(config.depots))],
-        ['Total Workers', str(sum(depot.worker_count for depot in config.depots))]
+        ['Total Pickup Spots', str(len(config.pickupspots))],
+        ['Total Workers', str(sum(pickupspot.worker_count for pickupspot in config.pickupspots))]
     ]
     
     config_table = Table(config_data, colWidths=[2*inch, 3*inch])
@@ -184,7 +184,7 @@ def export_results_to_pdf(result: OptimizationResult, config: AppConfiguration) 
         ['Total Distance', f"{result.total_distance:.1f} km"],
         ['Total Cost', f"{result.total_cost:.0f} PKR"],
         ['Vehicles Used', f"{result.total_vehicles_used}/{len(config.vehicles)}"],
-        ['Unassigned Depots', str(len(result.unassigned_depots))]
+        ['Unassigned Pickup Spots', str(len(result.unassigned_pickupspots))]
     ]
     
     results_table = Table(results_data, colWidths=[2*inch, 3*inch])
@@ -230,16 +230,16 @@ def export_results_to_pdf(result: OptimizationResult, config: AppConfiguration) 
         story.append(Spacer(1, 12))
         
         # Route sequence
-        route_sequence = "Factory → " + " → ".join([stop.depot_name for stop in route.stops]) + " → Factory"
+        route_sequence = "Factory → " + " → ".join([stop.pickupspot_name for stop in route.stops]) + " → Factory"
         story.append(Paragraph(f"<b>Route:</b> {route_sequence}", styles['Normal']))
         
         # Detailed stops
         if route.stops:
-            stops_data = [['Stop', 'Depot Name', 'Workers', 'Coordinates']]
+            stops_data = [['Stop', 'Pickup Spot Name', 'Workers', 'Coordinates']]
             for stop in route.stops:
                 stops_data.append([
                     str(stop.arrival_order),
-                    stop.depot_name,
+                    stop.pickupspot_name,
                     str(stop.worker_count),
                     f"{stop.latitude:.4f}, {stop.longitude:.4f}"
                 ])
@@ -261,13 +261,13 @@ def export_results_to_pdf(result: OptimizationResult, config: AppConfiguration) 
         
         story.append(Spacer(1, 20))
     
-    # Unassigned depots warning
-    if result.unassigned_depots:
-        story.append(Paragraph("Unassigned Depots", section_style))
-        story.append(Paragraph("The following depots could not be assigned to any vehicle:", styles['Normal']))
+    # Unassigned pickup spots warning
+    if result.unassigned_pickupspots:
+        story.append(Paragraph("Unassigned Pickup Spots", section_style))
+        story.append(Paragraph("The following pickup spots could not be assigned to any vehicle:", styles['Normal']))
         
-        for depot in result.unassigned_depots:
-            story.append(Paragraph(f"• {depot}", styles['Normal']))
+        for pickupspot in result.unassigned_pickupspots:
+            story.append(Paragraph(f"• {pickupspot}", styles['Normal']))
         
         story.append(Spacer(1, 12))
         story.append(Paragraph("Consider adding more vehicles or increasing vehicle capacity.", styles['Italic']))
@@ -296,7 +296,7 @@ def create_route_summary_dataframe(result: OptimizationResult) -> pd.DataFrame:
             'Stops': len(route.stops),
             'Workers': sum(stop.worker_count for stop in route.stops),
             'Utilization_%': route.utilization_percent,
-            'Route_Sequence': ' → '.join([stop.depot_name for stop in route.stops])
+            'Route_Sequence': ' → '.join([stop.pickupspot_name for stop in route.stops])
         }
         data.append(row)
     
@@ -333,7 +333,7 @@ def export_for_drivers(result: OptimizationResult, config: AppConfiguration) -> 
         output.append("1. START at Factory")
         
         for stop in route.stops:
-            output.append(f"{stop.arrival_order + 1}. {stop.depot_name} - Pick up {stop.worker_count} workers")
+            output.append(f"{stop.arrival_order + 1}. {stop.pickupspot_name} - Pick up {stop.worker_count} workers")
             output.append(f"   Location: {stop.latitude:.4f}, {stop.longitude:.4f}")
         
         output.append(f"{len(route.stops) + 2}. RETURN to Factory")

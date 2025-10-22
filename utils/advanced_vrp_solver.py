@@ -1,9 +1,9 @@
 """
 Advanced VRP Solver with Proper Optimization
 - Minimizes total cost
-- Prevents unnecessary depot splitting
+- Prevents unnecessary pickup spot splitting
 - Optimizes vehicle selection
-- Uses ALNS (Adaptive Large Neighborhood Search) with Genetic Algorithm
+- Uses ALNS (Adaptive Large Neighborhood Search) with Greedy Algorithm
 - Supports OSRM for real road routing
 """
 
@@ -15,15 +15,15 @@ import copy
 from geopy.distance import geodesic
 
 from models.data_models import (
-    Vehicle, Depot, Factory, OptimizedRoute, RouteStop, RouteSegment, RouteStep,
+    Vehicle, PickupSpot, Factory, OptimizedRoute, RouteStop, RouteSegment, RouteStep,
     OptimizationResult, VehicleType
 )
 from utils.osrm_client import calculate_distance_with_osrm, get_route_with_geometry
 
 @dataclass
 class Assignment:
-    """Assignment of workers from a depot to a vehicle"""
-    depot_id: str
+    """Assignment of workers from a pickup spot to a vehicle"""
+    pickupspot_id: str
     vehicle_id: str
     workers: int
     
@@ -38,7 +38,7 @@ class Solution:
     
     def copy(self):
         return Solution(
-            assignments=[Assignment(a.depot_id, a.vehicle_id, a.workers) for a in self.assignments],
+            assignments=[Assignment(a.pickupspot_id, a.vehicle_id, a.workers) for a in self.assignments],
             fitness=self.fitness,
             total_cost=self.total_cost,
             total_distance=self.total_distance,
@@ -49,15 +49,15 @@ class AdvancedVRPSolver:
     """
     Advanced VRP Solver with:
     - Cost minimization
-    - Smart vehicle selection (prefer single vehicle per depot)
+    - Smart vehicle selection (prefer single vehicle per pickup spot)
     - Capacity-aware assignments
     - ALNS + Genetic Algorithm hybrid
     """
     
-    def __init__(self, factory: Factory, vehicles: List[Vehicle], depots: List[Depot], use_real_roads: bool = True):
+    def __init__(self, factory: Factory, vehicles: List[Vehicle], pickupspots: List[PickupSpot], use_real_roads: bool = True):
         self.factory = factory
         self.vehicles = sorted(vehicles, key=lambda v: v.cost_per_km)  # Sort by cost efficiency
-        self.depots = depots
+        self.pickupspots = pickupspots
         self.use_real_roads = use_real_roads  # Use OSRM for real road distances
         
         # Precompute distances
@@ -74,23 +74,23 @@ class AdvancedVRPSolver:
         
         print(f"📍 Computing distances (use_real_roads={self.use_real_roads})...")
         
-        for depot in self.depots:
-            depot_pos = (depot.latitude, depot.longitude)
-            distances[('factory', depot.id)] = calculate_distance_with_osrm(
+        for pickupspot in self.pickupspots:
+            pickupspot_pos = (pickupspot.latitude, pickupspot.longitude)
+            distances[('factory', pickupspot.id)] = calculate_distance_with_osrm(
                 self.factory.latitude, self.factory.longitude,
-                depot.latitude, depot.longitude,
+                pickupspot.latitude, pickupspot.longitude,
                 use_osrm=self.use_real_roads
             )
             
-        for i, depot1 in enumerate(self.depots):
-            for depot2 in self.depots[i+1:]:
+        for i, pickupspot1 in enumerate(self.pickupspots):
+            for pickupspot2 in self.pickupspots[i+1:]:
                 dist = calculate_distance_with_osrm(
-                    depot1.latitude, depot1.longitude,
-                    depot2.latitude, depot2.longitude,
+                    pickupspot1.latitude, pickupspot1.longitude,
+                    pickupspot2.latitude, pickupspot2.longitude,
                     use_osrm=self.use_real_roads
                 )
-                distances[(depot1.id, depot2.id)] = dist
-                distances[(depot2.id, depot1.id)] = dist
+                distances[(pickupspot1.id, pickupspot2.id)] = dist
+                distances[(pickupspot2.id, pickupspot1.id)] = dist
         
         print(f"✅ Distance computation complete\n")
         return distances
@@ -106,8 +106,8 @@ class AdvancedVRPSolver:
         """
         
         print(f"\n🎯 Advanced VRP Solver Starting...")
-        print(f"   Vehicles: {len(self.vehicles)}, Depots: {len(self.depots)}")
-        print(f"   Total demand: {sum(d.worker_count for d in self.depots)} workers")
+        print(f"   Vehicles: {len(self.vehicles)}, Pickup Spots: {len(self.pickupspots)}")
+        print(f"   Total demand: {sum(d.worker_count for d in self.pickupspots)} workers")
         print(f"   Total capacity: {sum(v.capacity for v in self.vehicles)} seats\n")
         
         # Step 1: Create intelligent initial solution
@@ -147,63 +147,63 @@ class AdvancedVRPSolver:
         # Sort vehicles by cost efficiency (cheapest first)
         sorted_vehicles = sorted(self.vehicles, key=lambda v: v.cost_per_km)
         
-        # Sort depots by worker count (largest first for better bin packing)
-        sorted_depots = sorted(self.depots, key=lambda d: d.worker_count, reverse=True)
+        # Sort pickup spots by worker count (largest first for better bin packing)
+        sorted_pickupspots = sorted(self.pickupspots, key=lambda d: d.worker_count, reverse=True)
         
         # Try to minimize number of vehicles used
         # Strategy: Fill each vehicle to maximum capacity before using next vehicle
         
-        unassigned_depots = sorted_depots.copy()
+        unassigned_pickupspots = sorted_pickupspots.copy()
         
         for vehicle in sorted_vehicles:
-            if not unassigned_depots:
-                break  # All depots assigned
+            if not unassigned_pickupspots:
+                break  # All pickup spots assigned
             
             vehicle_load = 0
-            vehicle_depots = []
+            vehicle_pickupspots = []
             
-            # Try to fill this vehicle with depots
-            remaining_depots = []
+            # Try to fill this vehicle with pickup spots
+            remaining_pickupspots = []
             
-            for depot in unassigned_depots:
-                if vehicle_load + depot.worker_count <= vehicle.capacity:
-                    # Entire depot fits
-                    vehicle_depots.append(depot)
+            for pickupspot in unassigned_pickupspots:
+                if vehicle_load + pickupspot.worker_count <= vehicle.capacity:
+                    # Entire pickup spot fits
+                    vehicle_pickupspots.append(pickupspot)
                     solution.assignments.append(Assignment(
-                        depot_id=depot.id,
+                        pickupspot_id=pickupspot.id,
                         vehicle_id=vehicle.id,
-                        workers=depot.worker_count
+                        workers=pickupspot.worker_count
                     ))
-                    vehicle_load += depot.worker_count
+                    vehicle_load += pickupspot.worker_count
                 elif vehicle_load < vehicle.capacity:
-                    # Partial depot assignment (depot splitting)
+                    # Partial pickup spot assignment (pickup spot splitting)
                     available_space = vehicle.capacity - vehicle_load
                     solution.assignments.append(Assignment(
-                        depot_id=depot.id,
+                        pickupspot_id=pickupspot.id,
                         vehicle_id=vehicle.id,
                         workers=available_space
                     ))
                     vehicle_load += available_space
                     
-                    # Create a "partial depot" for remaining workers
-                    remaining_workers = depot.worker_count - available_space
-                    partial_depot = Depot(
-                        id=depot.id,
-                        name=depot.name,
-                        latitude=depot.latitude,
-                        longitude=depot.longitude,
+                    # Create a "partial pickup spot" for remaining workers
+                    remaining_workers = pickupspot.worker_count - available_space
+                    partial_pickupspot = PickupSpot(
+                        id=pickupspot.id,
+                        name=pickupspot.name,
+                        latitude=pickupspot.latitude,
+                        longitude=pickupspot.longitude,
                         worker_count=remaining_workers
                     )
-                    remaining_depots.append(partial_depot)
+                    remaining_pickupspots.append(partial_pickupspot)
                 else:
-                    # Vehicle full, keep depot for next vehicle
-                    remaining_depots.append(depot)
+                    # Vehicle full, keep pickup spot for next vehicle
+                    remaining_pickupspots.append(pickupspot)
             
-            unassigned_depots = remaining_depots
+            unassigned_pickupspots = remaining_pickupspots
         
         # Check if all workers assigned
         total_assigned = sum(a.workers for a in solution.assignments)
-        total_workers = sum(d.worker_count for d in self.depots)
+        total_workers = sum(d.worker_count for d in self.pickupspots)
         
         if total_assigned < total_workers:
             print(f"   ⚠️  Warning: Only assigned {total_assigned}/{total_workers} workers")
@@ -225,15 +225,15 @@ class AdvancedVRPSolver:
                 return False
         
         # Check all workers assigned
-        depot_assigned = {d.id: 0 for d in self.depots}
+        pickupspot_assigned = {d.id: 0 for d in self.pickupspots}
         for assignment in solution.assignments:
-            depot_assigned[assignment.depot_id] += assignment.workers
+            pickupspot_assigned[assignment.pickupspot_id] += assignment.workers
         
-        for depot in self.depots:
-            assigned = depot_assigned[depot.id]
-            expected = depot.worker_count
+        for pickupspot in self.pickupspots:
+            assigned = pickupspot_assigned[pickupspot.id]
+            expected = pickupspot.worker_count
             if assigned != expected:
-                print(f"   ❌ WORKER MISMATCH: {depot.name} has {assigned} assigned but needs {expected}")
+                print(f"   ❌ WORKER MISMATCH: {pickupspot.name} has {assigned} assigned but needs {expected}")
                 return False
         
         return True
@@ -259,11 +259,11 @@ class AdvancedVRPSolver:
                 
             vehicles_used += 1
             
-            # Get unique depots for this vehicle
-            depot_ids = list(set(a.depot_id for a in vehicle_routes[vehicle.id]))
+            # Get unique pickup spots for this vehicle
+            pickupspot_ids = list(set(a.pickupspot_id for a in vehicle_routes[vehicle.id]))
             
-            # Calculate route distance (TSP for this vehicle's depots)
-            route_distance = self._calculate_route_distance(depot_ids)
+            # Calculate route distance (TSP for this vehicle's pickup spots)
+            route_distance = self._calculate_route_distance(pickupspot_ids)
             
             # Calculate cost
             route_cost = route_distance * vehicle.cost_per_km
@@ -280,14 +280,14 @@ class AdvancedVRPSolver:
         vehicle_penalty = vehicles_used * 1000  # 1000 PKR penalty per vehicle
         solution.fitness = total_cost + vehicle_penalty
     
-    def _calculate_route_distance(self, depot_ids: List[str]) -> float:
-        """Calculate total distance for visiting these depots (nearest neighbor TSP)"""
-        if not depot_ids:
+    def _calculate_route_distance(self, pickupspot_ids: List[str]) -> float:
+        """Calculate total distance for visiting these pickup spots (nearest neighbor TSP)"""
+        if not pickupspot_ids:
             return 0.0
         
         # Start from factory
         current = 'factory'
-        remaining = depot_ids.copy()
+        remaining = pickupspot_ids.copy()
         total_distance = 0.0
         
         # Nearest neighbor
@@ -295,12 +295,12 @@ class AdvancedVRPSolver:
             nearest = None
             nearest_dist = float('inf')
             
-            for depot_id in remaining:
-                key = (current, depot_id) if current == 'factory' else (current, depot_id)
+            for pickupspot_id in remaining:
+                key = (current, pickupspot_id) if current == 'factory' else (current, pickupspot_id)
                 dist = self.distances.get(key, 0)
                 if dist < nearest_dist:
                     nearest_dist = dist
-                    nearest = depot_id
+                    nearest = pickupspot_id
             
             total_distance += nearest_dist
             current = nearest
@@ -315,14 +315,14 @@ class AdvancedVRPSolver:
         """
         Generate route segments with OSRM geometry for visualization
         
-        Creates segments: Factory -> Depot1 -> Depot2 -> ... -> Factory
+        Creates segments: Factory -> PickupSpot1 -> PickupSpot2 -> ... -> Factory
         """
         segments = []
         
         if not stops:
             return segments
         
-        # Build coordinate list: factory -> depots -> factory
+        # Build coordinate list: factory -> pickup spots -> factory
         coordinates = [(self.factory.latitude, self.factory.longitude)]
         for stop in stops:
             coordinates.append((stop.latitude, stop.longitude))
@@ -415,9 +415,9 @@ class AdvancedVRPSolver:
         consolidated = Solution()
         used_vehicles = set()
         
-        for depot in self.depots:
-            depot_assignments = [a for a in solution.assignments if a.depot_id == depot.id]
-            total_workers = sum(a.workers for a in depot_assignments)
+        for pickupspot in self.pickupspots:
+            pickupspot_assignments = [a for a in solution.assignments if a.pickupspot_id == pickupspot.id]
+            total_workers = sum(a.workers for a in pickupspot_assignments)
             
             # Try to assign to a single cheap vehicle
             assigned = False
@@ -427,7 +427,7 @@ class AdvancedVRPSolver:
                 # STRICT CHECK: Don't exceed capacity
                 if current_load + total_workers <= vehicle.capacity:
                     consolidated.assignments.append(Assignment(
-                        depot_id=depot.id,
+                        pickupspot_id=pickupspot.id,
                         vehicle_id=vehicle.id,
                         workers=total_workers
                     ))
@@ -447,7 +447,7 @@ class AdvancedVRPSolver:
                     if available > 0:
                         pickup = min(remaining, available)
                         consolidated.assignments.append(Assignment(
-                            depot_id=depot.id,
+                            pickupspot_id=pickupspot.id,
                             vehicle_id=vehicle.id,
                             workers=pickup
                         ))
@@ -456,7 +456,7 @@ class AdvancedVRPSolver:
                 
                 # Safety check: ensure all workers assigned
                 if remaining > 0:
-                    print(f"   ⚠️  ERROR: Could not assign {remaining} workers from {depot.name}")
+                    print(f"   ⚠️  ERROR: Could not assign {remaining} workers from {pickupspot.name}")
                     return solution  # Return original if consolidation fails
         
         # MANDATORY VALIDATION
@@ -489,9 +489,9 @@ class AdvancedVRPSolver:
         Apply single ALNS iteration: destroy and repair
         
         Destroy operators:
-        - Random removal: Remove random depot assignments
-        - Worst removal: Remove most expensive depot assignments
-        - Related removal: Remove nearby depots
+        - Random removal: Remove random pickup spot assignments
+        - Worst removal: Remove most expensive pickup spot assignments
+        - Related removal: Remove nearby pickup spots
         
         Repair operators:
         - Greedy insertion: Insert at cheapest position
@@ -501,60 +501,60 @@ class AdvancedVRPSolver:
         
         # Choose destroy operator
         destroy_type = random.choice(['random', 'worst', 'related'])
-        destroy_count = random.randint(2, min(5, len(self.depots)))
+        destroy_count = random.randint(2, min(5, len(self.pickupspots)))
         
-        destroyed_depots = set()
+        destroyed_pickupspots = set()
         
         if destroy_type == 'random':
             # Random removal
-            depots_to_remove = random.sample([d.id for d in self.depots], destroy_count)
-            destroyed_depots = set(depots_to_remove)
+            pickupspots_to_remove = random.sample([d.id for d in self.pickupspots], destroy_count)
+            destroyed_pickupspots = set(pickupspots_to_remove)
             
         elif destroy_type == 'worst':
-            # Remove most expensive depot assignments
-            depot_costs = {}
-            for depot in self.depots:
-                depot_assignments = [a for a in current.assignments if a.depot_id == depot.id]
-                if depot_assignments:
-                    # Estimate cost for this depot
-                    dist = self.distances.get(('factory', depot.id), 0) * 2
-                    vehicles_used = len(set(a.vehicle_id for a in depot_assignments))
+            # Remove most expensive pickup spot assignments
+            pickupspot_costs = {}
+            for pickupspot in self.pickupspots:
+                pickupspot_assignments = [a for a in current.assignments if a.pickupspot_id == pickupspot.id]
+                if pickupspot_assignments:
+                    # Estimate cost for this pickup spot
+                    dist = self.distances.get(('factory', pickupspot.id), 0) * 2
+                    vehicles_used = len(set(a.vehicle_id for a in pickupspot_assignments))
                     avg_cost_per_km = sum(v.cost_per_km for v in self.vehicles) / len(self.vehicles)
-                    depot_costs[depot.id] = dist * avg_cost_per_km * vehicles_used
+                    pickupspot_costs[pickupspot.id] = dist * avg_cost_per_km * vehicles_used
             
             # Remove most expensive
-            sorted_depots = sorted(depot_costs.items(), key=lambda x: x[1], reverse=True)
-            destroyed_depots = set([d[0] for d in sorted_depots[:destroy_count]])
+            sorted_pickupspots = sorted(pickupspot_costs.items(), key=lambda x: x[1], reverse=True)
+            destroyed_pickupspots = set([d[0] for d in sorted_pickupspots[:destroy_count]])
         
         else:  # related
-            # Remove nearby depots (clustering)
-            if self.depots:
-                seed_depot = random.choice(self.depots)
-                destroyed_depots = {seed_depot.id}
+            # Remove nearby pickup spots (clustering)
+            if self.pickupspots:
+                seed_pickupspot = random.choice(self.pickupspots)
+                destroyed_pickupspots = {seed_pickupspot.id}
                 
-                # Find nearby depots
-                while len(destroyed_depots) < destroy_count and len(destroyed_depots) < len(self.depots):
+                # Find nearby pickup spots
+                while len(destroyed_pickupspots) < destroy_count and len(destroyed_pickupspots) < len(self.pickupspots):
                     nearest = None
                     nearest_dist = float('inf')
-                    for depot in self.depots:
-                        if depot.id not in destroyed_depots:
-                            dist = sum(self.distances.get((d_id, depot.id), float('inf')) 
-                                     for d_id in destroyed_depots)
+                    for pickupspot in self.pickupspots:
+                        if pickupspot.id not in destroyed_pickupspots:
+                            dist = sum(self.distances.get((d_id, pickupspot.id), float('inf')) 
+                                     for d_id in destroyed_pickupspots)
                             if dist < nearest_dist:
                                 nearest_dist = dist
-                                nearest = depot.id
+                                nearest = pickupspot.id
                     if nearest:
-                        destroyed_depots.add(nearest)
+                        destroyed_pickupspots.add(nearest)
         
-        # Destroy: remove selected depots
-        current.assignments = [a for a in current.assignments if a.depot_id not in destroyed_depots]
+        # Destroy: remove selected pickup spots
+        current.assignments = [a for a in current.assignments if a.pickupspot_id not in destroyed_pickupspots]
         
         # Repair: re-insert with greedy cheapest insertion
         sorted_vehicles = sorted(self.vehicles, key=lambda v: v.cost_per_km)
         
-        for depot_id in destroyed_depots:
-            depot = next(d for d in self.depots if d.id == depot_id)
-            remaining = depot.worker_count
+        for pickupspot_id in destroyed_pickupspots:
+            pickupspot = next(d for d in self.pickupspots if d.id == pickupspot_id)
+            remaining = pickupspot.worker_count
             
             # Try to fit in single vehicle first
             for vehicle in sorted_vehicles:
@@ -564,7 +564,7 @@ class AdvancedVRPSolver:
                 if available >= remaining:
                     # Fits in one vehicle
                     current.assignments.append(Assignment(
-                        depot_id=depot.id,
+                        pickupspot_id=pickupspot.id,
                         vehicle_id=vehicle.id,
                         workers=remaining
                     ))
@@ -581,7 +581,7 @@ class AdvancedVRPSolver:
                     if available > 0:
                         pickup = min(remaining, available)
                         current.assignments.append(Assignment(
-                            depot_id=depot.id,
+                            pickupspot_id=pickupspot.id,
                             vehicle_id=vehicle.id,
                             workers=pickup
                         ))
@@ -607,26 +607,26 @@ class AdvancedVRPSolver:
             if not vehicle_assignments[vehicle.id]:
                 continue
             
-            # Get unique depots and total workers
-            depot_workers = {}
+            # Get unique pickup spots and total workers
+            pickupspot_workers = {}
             for assignment in vehicle_assignments[vehicle.id]:
-                if assignment.depot_id not in depot_workers:
-                    depot_workers[assignment.depot_id] = 0
-                depot_workers[assignment.depot_id] += assignment.workers
+                if assignment.pickupspot_id not in pickupspot_workers:
+                    pickupspot_workers[assignment.pickupspot_id] = 0
+                pickupspot_workers[assignment.pickupspot_id] += assignment.workers
             
             # Create route stops
             stops = []
             cumulative_load = 0
             
-            for order, (depot_id, workers) in enumerate(depot_workers.items(), 1):
-                depot = next(d for d in self.depots if d.id == depot_id)
+            for order, (pickupspot_id, workers) in enumerate(pickupspot_workers.items(), 1):
+                pickupspot = next(d for d in self.pickupspots if d.id == pickupspot_id)
                 cumulative_load += workers
                 
                 stop = RouteStop(
-                    depot_id=depot.id,
-                    depot_name=depot.name,
-                    latitude=depot.latitude,
-                    longitude=depot.longitude,
+                    pickupspot_id=pickupspot.id,
+                    pickupspot_name=pickupspot.name,
+                    latitude=pickupspot.latitude,
+                    longitude=pickupspot.longitude,
                     worker_count=workers,
                     arrival_order=order,
                     cumulative_load=cumulative_load,
@@ -635,10 +635,10 @@ class AdvancedVRPSolver:
                 stops.append(stop)
             
             # Calculate metrics
-            depot_ids = list(depot_workers.keys())
-            route_distance = self._calculate_route_distance(depot_ids)
+            pickupspot_ids = list(pickupspot_workers.keys())
+            route_distance = self._calculate_route_distance(pickupspot_ids)
             route_cost = route_distance * vehicle.cost_per_km
-            total_workers = sum(depot_workers.values())
+            total_workers = sum(pickupspot_workers.values())
             utilization = (total_workers / vehicle.capacity) * 100
             
             # Generate route segments with OSRM geometry
@@ -665,17 +665,17 @@ class AdvancedVRPSolver:
             total_distance=solution.total_distance,
             total_cost=solution.total_cost,
             total_vehicles_used=solution.vehicles_used,
-            unassigned_depots=[]
+            unassigned_pickupspots=[]
         )
 
-def solve_vrp_advanced(factory: Factory, vehicles: List[Vehicle], depots: List[Depot],
+def solve_vrp_advanced(factory: Factory, vehicles: List[Vehicle], pickupspots: List[PickupSpot],
                       use_real_roads: bool = True, generations: int = 200) -> Optional[OptimizationResult]:
     """
     Solve VRP with advanced optimization
     
     Features:
     - Minimizes total cost
-    - Prefers single vehicle per depot
+    - Prefers single vehicle per pickup spot
     - Smart vehicle selection
     - ALNS + Genetic Algorithm hybrid
     - OSRM real road routing when enabled
@@ -683,9 +683,9 @@ def solve_vrp_advanced(factory: Factory, vehicles: List[Vehicle], depots: List[D
     Args:
         factory: Factory location
         vehicles: Available vehicles
-        depots: Pickup depots
+        pickupspots: Pickup spots
         use_real_roads: Whether to use OSRM for real road distances (True) or Haversine (False)
         generations: Number of optimization iterations
     """
-    solver = AdvancedVRPSolver(factory, vehicles, depots, use_real_roads=use_real_roads)
+    solver = AdvancedVRPSolver(factory, vehicles, pickupspots, use_real_roads=use_real_roads)
     return solver.solve(generations=generations)

@@ -8,8 +8,22 @@ class RouteVisualizer {
         this.mapId = mapId;
         this.routeLayers = [];
         this.vehicleColors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
-            '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA'
+            '#C62828', // Dark Red
+            '#AD1457', // Dark Pink
+            '#6A1B9A', // Dark Purple
+            '#4527A0', // Dark Deep Purple
+            '#283593', // Dark Indigo
+            '#1565C0', // Dark Blue
+            '#0277BD', // Dark Light Blue
+            '#00838F', // Dark Cyan
+            '#00695C', // Dark Teal
+            '#2E7D32', // Dark Green
+            '#558B2F', // Dark Light Green
+            '#9E9D24', // Dark Lime
+            '#F9A825', // Dark Yellow
+            '#FF8F00', // Dark Amber
+            '#EF6C00', // Dark Orange
+            '#D84315'  // Dark Deep Orange
         ];
     }
 
@@ -82,8 +96,8 @@ class RouteVisualizer {
         // Create polyline for route
         const polyline = L.polyline(coordinates, {
             color: color,
-            weight: 4,
-            opacity: 0.7,
+            weight: 6,
+            opacity: 0.8,
             smoothFactor: 1.0
         });
 
@@ -116,7 +130,7 @@ class RouteVisualizer {
                     <div><strong>Stops:</strong> ${route.stops.length}</div>
                 </div>
                 <div class="stop-sequence">
-                    <strong>Route:</strong> Factory → ${route.stops.map(s => s.depot_name).join(' → ')} → Factory
+                    <strong>Route:</strong> Factory → ${route.stops.map(s => s.pickupspot_name).join(' → ')} → Factory
                 </div>
             </div>
         `;
@@ -167,7 +181,7 @@ class RouteVisualizer {
             // Detailed popup for stop
             const stopPopup = `
                 <div class="stop-popup">
-                    <h6><i class="fas fa-map-marker-alt"></i> ${stop.depot_name}</h6>
+                    <h6><i class="fas fa-map-marker-alt"></i> ${stop.pickupspot_name}</h6>
                     <div class="stop-details">
                         <div><strong>Stop #:</strong> ${stop.arrival_order}</div>
                         <div><strong>Workers Picked:</strong> ${stop.worker_count}</div>
@@ -262,14 +276,14 @@ class RouteVisualizer {
             </div>
         `;
 
-        // Show unassigned depots if any
-        if (result.unassigned_depots && result.unassigned_depots.length > 0) {
+        // Show unassigned pickup spots if any
+        if (result.unassigned_pickupspots && result.unassigned_pickupspos.length > 0) {
             html += `
                 <div class="alert alert-warning">
-                    <h6><i class="fas fa-exclamation-triangle"></i> Unassigned Depots</h6>
-                    <p>The following depots could not be assigned:</p>
+                    <h6><i class="fas fa-exclamation-triangle"></i> Unassigned Pickup Spots</h6>
+                    <p>The following pickup spots could not be assigned:</p>
                     <ul>
-                        ${result.unassigned_depots.map(depot => `<li>${depot}</li>`).join('')}
+                        ${result.unassigned_pickupspots.map(spot => `<li>${spot}</li>`).join('')}
                     </ul>
                     <small>Consider adding more vehicles or increasing vehicle capacity.</small>
                 </div>
@@ -304,7 +318,7 @@ class RouteVisualizer {
                                         <span class="badge badge-${utilizationClass}">${route.utilization_percent.toFixed(1)}% utilization</span>
                                     </div>
                                     <div class="route-path mt-2">
-                                        <strong>Route:</strong> Factory → ${route.stops.map(s => s.depot_name).join(' → ')} → Factory
+                                        <strong>Route:</strong> Factory → ${route.stops.map(s => s.pickupspot_name).join(' → ')} → Factory
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -332,7 +346,7 @@ class RouteVisualizer {
                                     ${route.stops.map(stop => `
                                         <div class="col-md-4 mb-2">
                                             <div class="stop-info">
-                                                <strong>${stop.arrival_order}. ${stop.depot_name}</strong><br>
+                                                <strong>${stop.arrival_order}. ${stop.pickupspot_name}</strong><br>
                                                 <small>
                                                     Pickup: ${stop.worker_count} workers<br>
                                                     Total in vehicle: ${stop.cumulative_load || stop.worker_count}

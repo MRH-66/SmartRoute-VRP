@@ -82,25 +82,25 @@ class SmartRouteAPI {
         return await this.request(`/vehicles/${this.sessionId}/${vehicleId}`, 'DELETE');
     }
 
-    // Depot endpoints
-    async addDepot(spotData) {
+    // Pickup Spot endpoints
+    async addPickupSpot(spotData) {
         return await this.request(`/pickup_spots/${this.sessionId}`, 'POST', spotData);
     }
 
-    async addBulkDepots(spotsData) {
+    async addBulkPickupSpots(spotsData) {
         return await this.request(`/pickup_spots/${this.sessionId}/bulk`, 'POST', { pickup_spots: spotsData });
     }
 
-    async getDepots() {
+    async getPickupSpots() {
         return await this.request(`/pickup_spots/${this.sessionId}`);
     }
 
-    async updateDepot(depotId, spotData) {
-        return await this.request(`/pickup_spots/${this.sessionId}/${depotId}`, 'PUT', spotData);
+    async updatePickupSpot(pickupspotId, spotData) {
+        return await this.request(`/pickup_spots/${this.sessionId}/${pickupspotId}`, 'PUT', spotData);
     }
 
-    async deleteDepot(depotId) {
-        return await this.request(`/pickup_spots/${this.sessionId}/${depotId}`, 'DELETE');
+    async deletePickupSpot(pickupspotId) {
+        return await this.request(`/pickup_spots/${this.sessionId}/${pickupspotId}`, 'DELETE');
     }
 
     // Optimization endpoints
@@ -203,11 +203,11 @@ function validateVehicle(vehicleData) {
     return errors;
 }
 
-function validateDepot(spotData) {
+function validatePickupSpot(spotData) {
     const errors = [];
     
     if (!spotData.name || spotData.name.trim().length === 0) {
-        errors.push('Depot name is required');
+        errors.push('Pickup Spot name is required');
     }
     
     if (!spotData.latitude || spotData.latitude < -90 || spotData.latitude > 90) {

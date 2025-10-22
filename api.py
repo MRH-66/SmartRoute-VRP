@@ -16,11 +16,10 @@ from pathlib import Path
 
 # Import our models and utilities
 from models.data_models import (
-    Vehicle, VehicleType, Depot, Factory, 
+    Vehicle, VehicleType, PickupSpot, Factory, 
     OptimizationResult, AppConfiguration
 )
 from utils.advanced_vrp_solver import solve_vrp_advanced
-from utils.distance_calc import create_distance_matrix
 from utils.export_utils import export_results_to_csv, export_results_to_pdf
 
 app = FastAPI(
@@ -67,13 +66,13 @@ class VehicleResponse(BaseModel):
     capacity: int
     cost_per_km: float
 
-class DepotRequest(BaseModel):
+class PickupSpotRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     worker_count: int = Field(..., ge=1, le=500)
 
-class DepotResponse(BaseModel):
+class PickupSpotResponse(BaseModel):
     id: str
     name: str
     latitude: float
@@ -98,8 +97,8 @@ class OptimizationRequest(BaseModel):
     generations: int = Field(default=300, ge=100, le=1000)
     use_real_roads: bool = Field(default=True)
 
-class BulkDepotRequest(BaseModel):
-    pickup_spots: List[DepotRequest]
+class BulkPickupSpotRequest(BaseModel):
+    pickup_spots: List[PickupSpotRequest]
 
 class BulkVehicleRequest(BaseModel):
     vehicles: List[BulkVehicleItem]
@@ -144,7 +143,7 @@ async def get_configuration(session_id: str = "default"):
     return {
         "factory": config.factory.to_dict() if config.factory else None,
         "vehicles": [v.to_dict() for v in config.vehicles],
-        "pickup_spots": [d.to_dict() for d in config.depots],
+        "pickup_spots": [d.to_dict() for d in config.pickupspots],
         "is_complete": config.is_complete(),
         "progress_step": config.get_progress_step()
     }
@@ -328,103 +327,103 @@ async def delete_vehicle(vehicle_id: str, session_id: str = "default"):
     return {"message": f"Vehicle '{vehicle.name}' deleted"}
 
 # PickupSpot endpoints
-@app.post("/api/pickup_spots/{session_id}", response_model=DepotResponse)
-async def add_depot(depot_data: DepotRequest, session_id: str = "default"):
+@app.post("/api/pickup_spots/{session_id}", response_model=PickupSpotResponse)
+async def add_pickup_spot(pickup_spot_data: PickupSpotRequest, session_id: str = "default"):
     """Add a single pickup_spot"""
     config = get_session_config(session_id)
     
     # Check for duplicate names
-    existing_names = [d.name for d in config.depots]
-    if depot_data.name in existing_names:
-        raise HTTPException(status_code=400, detail="Depot name already exists")
+    existing_names = [d.name for d in config.pickupspots]
+    if pickup_spot_data.name in existing_names:
+        raise HTTPException(status_code=400, detail="PickupSpot name already exists")
     
-    depot = Depot(
+    pickup_spot = PickupSpot(
         id=str(uuid.uuid4()),
-        name=depot_data.name,
-        latitude=depot_data.latitude,
-        longitude=depot_data.longitude,
-        worker_count=depot_data.worker_count
+        name=pickup_spot_data.name,
+        latitude=pickup_spot_data.latitude,
+        longitude=pickup_spot_data.longitude,
+        worker_count=pickup_spot_data.worker_count
     )
     
-    config.depots.append(depot)
+    config.pickupspots.append(pickup_spot)
     
-    return DepotResponse(
-        id=depot.id,
-        name=depot.name,
-        latitude=depot.latitude,
-        longitude=depot.longitude,
-        worker_count=depot.worker_count
+    return PickupSpotResponse(
+        id=pickup_spot.id,
+        name=pickup_spot.name,
+        latitude=pickup_spot.latitude,
+        longitude=pickup_spot.longitude,
+        worker_count=pickup_spot.worker_count
     )
 
-@app.post("/api/pickup_spots/{session_id}/bulk", response_model=List[DepotResponse])
-async def add_multiple_depots(depots_data: BulkDepotRequest, session_id: str = "default"):
+@app.post("/api/pickup_spots/{session_id}/bulk", response_model=List[PickupSpotResponse])
+async def add_multiple_pickup_spots(pickup_spots_data: BulkPickupSpotRequest, session_id: str = "default"):
     """Add multiple pickup_spots at once"""
     config = get_session_config(session_id)
     
-    existing_names = [d.name for d in config.depots]
-    new_depots = []
+    existing_names = [d.name for d in config.pickupspots]
+    new_pickup_spots = []
     
-    for depot_data in depots_data.pickup_spots:
-        if depot_data.name in existing_names:
-            raise HTTPException(status_code=400, detail=f"Depot name '{depot_data.name}' already exists")
+    for pickup_spot_data in pickup_spots_data.pickup_spots:
+        if pickup_spot_data.name in existing_names:
+            raise HTTPException(status_code=400, detail=f"PickupSpot name '{pickup_spot_data.name}' already exists")
         
-        depot = Depot(
+        pickup_spot = PickupSpot(
             id=str(uuid.uuid4()),
-            name=depot_data.name,
-            latitude=depot_data.latitude,
-            longitude=depot_data.longitude,
-            worker_count=depot_data.worker_count
+            name=pickup_spot_data.name,
+            latitude=pickup_spot_data.latitude,
+            longitude=pickup_spot_data.longitude,
+            worker_count=pickup_spot_data.worker_count
         )
         
-        config.depots.append(depot)
-        existing_names.append(depot_data.name)  # Prevent duplicates within the same request
+        config.pickupspots.append(pickup_spot)
+        existing_names.append(pickup_spot_data.name)  # Prevent duplicates within the same request
         
-        new_depots.append(DepotResponse(
-            id=depot.id,
-            name=depot.name,
-            latitude=depot.latitude,
-            longitude=depot.longitude,
-            worker_count=depot.worker_count
+        new_pickup_spots.append(PickupSpotResponse(
+            id=pickup_spot.id,
+            name=pickup_spot.name,
+            latitude=pickup_spot.latitude,
+            longitude=pickup_spot.longitude,
+            worker_count=pickup_spot.worker_count
         ))
     
-    return new_depots
+    return new_pickup_spots
 
-@app.get("/api/pickup_spots/{session_id}", response_model=List[DepotResponse])
-async def get_depots(session_id: str = "default"):
+@app.get("/api/pickup_spots/{session_id}", response_model=List[PickupSpotResponse])
+async def get_pickup_spots(session_id: str = "default"):
     """Get all pickup_spots"""
     config = get_session_config(session_id)
     
     return [
-        DepotResponse(
+        PickupSpotResponse(
             id=d.id,
             name=d.name,
             latitude=d.latitude,
             longitude=d.longitude,
             worker_count=d.worker_count
         )
-        for d in config.depots
+        for d in config.pickupspots
     ]
 
-@app.put("/api/pickup_spots/{session_id}/{spot_id}", response_model=DepotResponse)
-async def update_depot(spot_id: str, depot_data: DepotRequest, session_id: str = "default"):
+@app.put("/api/pickup_spots/{session_id}/{spot_id}", response_model=PickupSpotResponse)
+async def update_pickup_spot(spot_id: str, pickup_spot_data: PickupSpotRequest, session_id: str = "default"):
     """Update a pickup_spot"""
     config = get_session_config(session_id)
     
-    pickup_spot = next((d for d in config.depots if d.id == spot_id), None)
+    pickup_spot = next((d for d in config.pickupspots if d.id == spot_id), None)
     if not pickup_spot:
         raise HTTPException(status_code=404, detail="PickupSpot not found")
     
     # Check for duplicate names (excluding current pickup_spot)
-    existing_names = [d.name for d in config.depots if d.id != spot_id]
-    if depot_data.name in existing_names:
+    existing_names = [d.name for d in config.pickupspots if d.id != spot_id]
+    if pickup_spot_data.name in existing_names:
         raise HTTPException(status_code=400, detail="PickupSpot name already exists")
     
-    pickup_spot.name = depot_data.name
-    pickup_spot.latitude = depot_data.latitude
-    pickup_spot.longitude = depot_data.longitude
-    pickup_spot.worker_count = depot_data.worker_count
+    pickup_spot.name = pickup_spot_data.name
+    pickup_spot.latitude = pickup_spot_data.latitude
+    pickup_spot.longitude = pickup_spot_data.longitude
+    pickup_spot.worker_count = pickup_spot_data.worker_count
     
-    return DepotResponse(
+    return PickupSpotResponse(
         id=pickup_spot.id,
         name=pickup_spot.name,
         latitude=pickup_spot.latitude,
@@ -433,15 +432,15 @@ async def update_depot(spot_id: str, depot_data: DepotRequest, session_id: str =
     )
 
 @app.delete("/api/pickup_spots/{session_id}/{spot_id}")
-async def delete_depot(spot_id: str, session_id: str = "default"):
+async def delete_pickup_spot(spot_id: str, session_id: str = "default"):
     """Delete a pickup_spot"""
     config = get_session_config(session_id)
     
-    pickup_spot = next((d for d in config.depots if d.id == spot_id), None)
+    pickup_spot = next((d for d in config.pickupspots if d.id == spot_id), None)
     if not pickup_spot:
         raise HTTPException(status_code=404, detail="PickupSpot not found")
     
-    config.depots = [d for d in config.depots if d.id != spot_id]
+    config.pickupspots = [d for d in config.pickupspots if d.id != spot_id]
     return {"message": f"PickupSpot '{pickup_spot.name}' deleted"}
 
 # Optimization endpoint
@@ -456,7 +455,7 @@ async def optimize_routes(optimization_data: OptimizationRequest, session_id: st
             missing.append("factory")
         if not config.vehicles:
             missing.append("vehicles")
-        if not config.depots:
+        if not config.pickupspots:
             missing.append("pickup_spots")
         
         raise HTTPException(
@@ -466,18 +465,18 @@ async def optimize_routes(optimization_data: OptimizationRequest, session_id: st
     
     try:
         # Debug info
-        print(f"Starting optimization with {len(config.vehicles)} vehicles and {len(config.depots)} pickup_spots")
+        print(f"Starting optimization with {len(config.vehicles)} vehicles and {len(config.pickupspots)} pickup_spots")
         for vehicle in config.vehicles:
             print(f"Vehicle: {vehicle.name}, Capacity: {vehicle.capacity}")
-        for pickup_spot in config.depots:
+        for pickup_spot in config.pickupspots:
             print(f"PickupSpot: {pickup_spot.name}, Workers: {pickup_spot.worker_count}")
             
         # Run optimization with Advanced Solver (only algorithm available)
-        print(f"Using Advanced Solver with cost optimization and smart depot assignment")
+        print(f"Using Advanced Solver with cost optimization and smart pickup spot assignment")
         result = solve_vrp_advanced(
             factory=config.factory,
             vehicles=config.vehicles,
-            depots=config.depots,
+            pickupspots=config.pickupspots,
             use_real_roads=optimization_data.use_real_roads
         )
         
@@ -486,14 +485,14 @@ async def optimize_routes(optimization_data: OptimizationRequest, session_id: st
             
             # Debug analysis
             total_assigned = sum(len(route.stops) for route in result.routes)
-            total_depots = len(config.depots)
+            total_pickupspots = len(config.pickupspots)
             total_workers_assigned = sum(sum(stop.worker_count for stop in route.stops) for route in result.routes)
-            total_workers_available = sum(depot.worker_count for depot in config.depots)
+            total_workers_available = sum(pickupspot.worker_count for pickupspot in config.pickupspots)
             
-            print(f"Analysis: {total_assigned}/{total_depots} depots assigned, {total_workers_assigned}/{total_workers_available} workers")
+            print(f"Analysis: {total_assigned}/{total_pickupspots} pickup spots assigned, {total_workers_assigned}/{total_workers_available} workers")
             
-            if result.unassigned_depots:
-                print(f"Unassigned depots: {result.unassigned_depots}")
+            if result.unassigned_pickupspots:
+                print(f"Unassigned pickup spots: {result.unassigned_pickupspots}")
                 # Check unused vehicles
                 used_vehicle_ids = {route.vehicle_id for route in result.routes}
                 unused_vehicles = [v for v in config.vehicles if v.id not in used_vehicle_ids]

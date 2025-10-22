@@ -101,7 +101,7 @@ app.add_middleware(
 1. Visit your Vercel URL: `https://smartroute-vrp.vercel.app`
 2. Open browser DevTools (F12) → Console
 3. Check for CORS errors
-4. Try adding factory, vehicles, depots
+4. Try adding factory, vehicles, pickup spots
 5. Test route optimization
 
 ---

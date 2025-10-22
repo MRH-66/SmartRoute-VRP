@@ -28,37 +28,37 @@
         "cost_per_km": 28.0
       }
     ],
-    "depots": [
+    "pickupspots": [
       {
-        "id": "depot_1",
+        "id": "pickupspot_1",
         "name": "Shalimar",
         "latitude": 31.6045,
         "longitude": 74.3567,
         "worker_count": 25
       },
       {
-        "id": "depot_2",
+        "id": "pickupspot_2",
         "name": "DHA Phase 5",
         "latitude": 31.4697,
         "longitude": 74.4078,
         "worker_count": 18
       },
       {
-        "id": "depot_3",
+        "id": "pickupspot_3",
         "name": "Gulberg",
         "latitude": 31.5203,
         "longitude": 74.3441,
         "worker_count": 22
       },
       {
-        "id": "depot_4",
+        "id": "pickupspot_4",
         "name": "Model Town",
         "latitude": 31.4833,
         "longitude": 74.3286,
         "worker_count": 15
       },
       {
-        "id": "depot_5",
+        "id": "pickupspot_5",
         "name": "Johar Town",
         "latitude": 31.4511,
         "longitude": 74.2611,

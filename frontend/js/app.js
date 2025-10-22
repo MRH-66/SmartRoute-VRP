@@ -11,11 +11,24 @@ let appState = {
     spotFormCount: 0
 };
 
-// Route colors for visualization
+// Route colors for visualization (dark shades for better contrast)
 const ROUTE_COLORS = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-    '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-    '#10AC84', '#EE5A24', '#0984E3', '#A29BFE', '#FD79A8'
+    '#C62828', // Dark Red
+    '#AD1457', // Dark Pink
+    '#6A1B9A', // Dark Purple
+    '#4527A0', // Dark Deep Purple
+    '#283593', // Dark Indigo
+    '#1565C0', // Dark Blue
+    '#0277BD', // Dark Light Blue
+    '#00838F', // Dark Cyan
+    '#00695C', // Dark Teal
+    '#2E7D32', // Dark Green
+    '#558B2F', // Dark Light Green
+    '#9E9D24', // Dark Lime
+    '#F9A825', // Dark Yellow
+    '#FF8F00', // Dark Amber
+    '#EF6C00', // Dark Orange
+    '#D84315'  // Dark Deep Orange
 ];
 
 // Initialize application
@@ -52,7 +65,7 @@ async function loadConfiguration() {
         appState.config = {
             factory: null,
             vehicles: [],
-            depots: [],
+            pickup_spots: [],
             is_complete: false,
             progress_step: 1
         };
@@ -100,7 +113,7 @@ function updateProgressSteps() {
 function updateDashboard() {
     updateFactoryStatus();
     updateFleetStatus();
-    updateDepotStatus();
+    updatePickupSpotStatus();
     updateOptimizationStatus();
     updateQuickActions();
 }
@@ -143,8 +156,8 @@ function updateFleetStatus() {
     }
 }
 
-function updateDepotStatus() {
-    const statusElement = document.getElementById('depot-status');
+function updatePickupSpotStatus() {
+    const statusElement = document.getElementById('pickup-spots-status');
     if (!statusElement) return;
     
     if (appState.config.pickup_spots.length > 0) {
@@ -153,12 +166,12 @@ function updateDepotStatus() {
         statusElement.className = 'status-set';
         statusElement.innerHTML = `
             <i class="fas fa-check-circle"></i> 
-            ${appState.config.pickup_spots.length} depots
+            ${appState.config.pickup_spots.length} pickupspots
             <br><small>${totalWorkers} total workers</small>
         `;
     } else {
         statusElement.className = 'status-not-set';
-        statusElement.innerHTML = '<i class="fas fa-times-circle"></i> No depots';
+        statusElement.innerHTML = '<i class="fas fa-times-circle"></i> No Pickup Spots';
     }
 }
 
@@ -207,7 +220,7 @@ function updateQuickActions() {
                 <h6><i class="fas fa-exclamation-triangle"></i> Next Step</h6>
                 <p>Map pickup locations</p>
                 <button class="btn btn-primary" onclick="switchToTab('pickup-spots-tab')">
-                    <i class="fas fa-map-marker-alt"></i> Add Depots
+                    <i class="fas fa-map-marker-alt"></i> Add Pickup Spots
                 </button>
             </div>
         `;
@@ -243,16 +256,16 @@ function initializeMaps() {
     }
     
     // PickupSpot map
-    if (!appState.maps.depot) {
-        const spotMapElement = document.getElementById('depot-map');
+    if (!appState.maps.pickupspots) {
+        const spotMapElement = document.getElementById('pickup-spot-map');
         if (spotMapElement) {
-            appState.maps.depot = L.map('depot-map').setView([31.5204, 74.3587], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(appState.maps.depot);
+            appState.maps.pickupspots = L.map('pickup-spot-map').setView([31.5204, 74.3587], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(appState.maps.pickupspots);
             
-            // Click handler for depot location
-            appState.maps.depot.on('click', function(e) {
+            // Click handler for pickup spot location
+            appState.maps.pickupspots.on('click', function(e) {
                 if (appState.config.factory) {
-                    setDepotLocation(e.latlng.lat, e.latlng.lng);
+                    setPickupSpotLocation(e.latlng.lat, e.latlng.lng);
                 } else {
                     showError('Please set factory location first');
                 }
@@ -274,10 +287,10 @@ function updateMapMarkers() {
         });
     }
     
-    if (appState.maps.depot) {
-        appState.maps.depot.eachLayer(layer => {
+    if (appState.maps.pickupspots) {
+        appState.maps.pickupspots.eachLayer(layer => {
             if (layer instanceof L.Marker) {
-                appState.maps.depot.removeLayer(layer);
+                appState.maps.pickupspots.removeLayer(layer);
             }
         });
     }
@@ -296,25 +309,25 @@ function updateMapMarkers() {
                 .bindPopup(`🏭 ${appState.config.factory.name}`);
         }
         
-        if (appState.maps.depot) {
+        if (appState.maps.pickupspots) {
             L.marker([appState.config.factory.latitude, appState.config.factory.longitude], {icon: factoryIcon})
-                .addTo(appState.maps.depot)
+                .addTo(appState.maps.pickupspots)
                 .bindPopup(`🏭 ${appState.config.factory.name}`);
         }
     }
     
-    // Add depot markers
-    appState.config.pickup_spots.forEach(depot => {
+    // Add pickup spot markers
+    appState.config.pickup_spots.forEach(pickupspots => {
         const spotIcon = L.divIcon({
             html: '<i class="fas fa-users" style="color: blue; font-size: 16px;"></i>',
             iconSize: [25, 25],
             className: 'custom-div-icon'
         });
         
-        if (appState.maps.depot) {
-            L.marker([depot.latitude, depot.longitude], {icon: spotIcon})
-                .addTo(appState.maps.depot)
-                .bindPopup(`📍 ${depot.name}<br>👥 ${depot.worker_count} workers`);
+        if (appState.maps.pickupspots) {
+            L.marker([pickupspots.latitude, pickupspots.longitude], {icon: spotIcon})
+                .addTo(appState.maps.pickupspots)
+                .bindPopup(`📍 ${pickupspots.name}<br>👥 ${pickupspots.worker_count} workers`);
         }
     });
 }
@@ -334,7 +347,7 @@ function setupEventListeners() {
             // Resize maps when tab becomes visible
             setTimeout(() => {
                 if (appState.maps.factory) appState.maps.factory.invalidateSize();
-                if (appState.maps.depot) appState.maps.depot.invalidateSize();
+                if (appState.maps.pickupspots) appState.maps.pickupspots.invalidateSize();
             }, 100);
             
             // Update content based on active tab
@@ -344,7 +357,7 @@ function setupEventListeners() {
                     loadVehicles();
                     break;
                 case 'pickup-spots':
-                    loadDepots();
+                    loadPickupSpots();
                     break;
                 case 'factory':
                     loadFactory();
@@ -714,24 +727,24 @@ async function deleteVehicle(vehicleId) {
     }
 }
 
-// Depot management - Enhanced for multiple additions
-async function loadDepots() {
+// Pickup Spot management - Enhanced for multiple additions
+async function loadPickupSpots() {
     try {
-        const depots = await api.getDepots();
-        updateDepotSummary(depots);
-        updateDepotList(depots);
+        const pickupspots = await api.getPickupSpots();
+        updatePickupSpotSummary(pickupspots);
+        updatePickupSpotList(pickupspots);
         updateMapMarkers();
     } catch (error) {
-        showError('Failed to load depots: ' + error.message);
+        showError('Failed to load pickup spots: ' + error.message);
     }
 }
 
-function updateDepotSummary(depots) {
-    const summaryElement = document.getElementById('depot-summary');
+function updatePickupSpotSummary(pickupspots) {
+    const summaryElement = document.getElementById('pickup-spot-summary');
     if (!summaryElement) return;
     
-    const totalWorkers = depots.reduce((sum, d) => sum + d.worker_count, 0);
-    const avgWorkers = depots.length > 0 ? totalWorkers / depots.length : 0;
+    const totalWorkers = pickupspots.reduce((sum, d) => sum + d.worker_count, 0);
+    const avgWorkers = pickupspots.length > 0 ? totalWorkers / pickupspots.length : 0;
     
     summaryElement.innerHTML = `
         <div class="card">
@@ -739,7 +752,7 @@ function updateDepotSummary(depots) {
                 <h6><i class="fas fa-map-marker-alt"></i> PickupSpot Summary</h6>
                 <div class="row text-center">
                     <div class="col-6">
-                        <h4>${depots.length}</h4>
+                        <h4>${pickupspots.length}</h4>
                         <small>Total PickupSpots</small>
                     </div>
                     <div class="col-6">
@@ -748,20 +761,20 @@ function updateDepotSummary(depots) {
                     </div>
                 </div>
                 <hr>
-                <small class="text-muted">Average: ${formatNumber(avgWorkers, 1)} workers per depot</small>
+                <small class="text-muted">Average: ${formatNumber(avgWorkers, 1)} workers per pickup spot</small>
             </div>
         </div>
     `;
 }
 
-function updateDepotList(depots) {
-    const listElement = document.getElementById('depot-list');
+function updatePickupSpotList(pickupspots) {
+    const listElement = document.getElementById('pickup-spot-list');
     if (!listElement) return;
     
-    if (depots.length === 0) {
+    if (pickupspots.length === 0) {
         listElement.innerHTML = `
             <div class="alert alert-info">
-                <h6><i class="fas fa-info-circle"></i> No depots configured</h6>
+                <h6><i class="fas fa-info-circle"></i> No pickup spots configured</h6>
                 <p>Click on the map or use the "Add PickupSpot" button to add pickup locations.</p>
             </div>
         `;
@@ -770,24 +783,24 @@ function updateDepotList(depots) {
     
     let html = '<div class="list-group">';
     
-    depots.forEach((depot, index) => {
+    pickupspots.forEach((pickupspot, index) => {
         html += `
             <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="mb-1">${depot.name}</h6>
-                        <p class="mb-1"><i class="fas fa-users"></i> ${depot.worker_count} workers</p>
-                        <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${depot.latitude.toFixed(4)}, ${depot.longitude.toFixed(4)}</small>
+                        <h6 class="mb-1">${pickupspot.name}</h6>
+                        <p class="mb-1"><i class="fas fa-users"></i> ${pickupspot.worker_count} workers</p>
+                        <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${pickupspot.latitude.toFixed(4)}, ${pickupspot.longitude.toFixed(4)}</small>
                     </div>
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="editDepot('${depot.id}')">
+                            <li><a class="dropdown-item" href="#" onclick="editPickupSpot('${pickupspot.id}')">
                                 <i class="fas fa-edit"></i> Edit
                             </a></li>
-                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteDepot('${depot.id}')">
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deletePickupSpot('${pickupspot.id}')">
                                 <i class="fas fa-trash"></i> Delete
                             </a></li>
                         </ul>
@@ -801,74 +814,74 @@ function updateDepotList(depots) {
     listElement.innerHTML = html;
 }
 
-function setDepotLocation(lat, lng) {
-    document.getElementById('depotLat').value = lat.toFixed(6);
-    document.getElementById('depotLon').value = lng.toFixed(6);
+function setPickupSpotLocation(lat, lng) {
+    document.getElementById('pickupspotLat').value = lat.toFixed(6);
+    document.getElementById('pickupspotLon').value = lng.toFixed(6);
     
-    // Show the add depot modal with pre-filled coordinates
-    const modal = new bootstrap.Modal(document.getElementById('addDepotModal'));
+    // Show the add pickup spot modal with pre-filled coordinates
+    const modal = new bootstrap.Modal(document.getElementById('addPickupSpotModal'));
     modal.show();
 }
 
 // PickupSpot modal functions
-function showAddDepotModal() {
+function showAddPickupSpotModal() {
     // Clear form
-    document.getElementById('addDepotForm').reset();
+    document.getElementById('addPickupSpotForm').reset();
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('addDepotModal'));
+    const modal = new bootstrap.Modal(document.getElementById('addPickupSpotModal'));
     modal.show();
 }
 
-async function addDepot() {
+async function addPickupSpot() {
     const spotData = {
-        name: document.getElementById('depotName').value,
-        latitude: parseFloat(document.getElementById('depotLat').value),
-        longitude: parseFloat(document.getElementById('depotLon').value),
-        worker_count: parseInt(document.getElementById('depotWorkers').value)
+        name: document.getElementById('pickupspotName').value,
+        latitude: parseFloat(document.getElementById('pickupspotLat').value),
+        longitude: parseFloat(document.getElementById('pickupspotLon').value),
+        worker_count: parseInt(document.getElementById('pickupspotWorkers').value)
     };
     
-    const errors = validateDepot(spotData);
+    const errors = validatePickupSpot(spotData);
     if (errors.length > 0) {
         showError(errors.join(', '));
         return;
     }
     
     try {
-        await api.addDepot(spotData);
+        await api.addPickupSpot(spotData);
         await saveConfiguration();
-        showSuccess(`Depot '${spotData.name}' added successfully`);
+        showSuccess(`Pickup Spot '${spotData.name}' added successfully`);
         
         // Close modal and reload
-        bootstrap.Modal.getInstance(document.getElementById('addDepotModal')).hide();
-        loadDepots();
+        bootstrap.Modal.getInstance(document.getElementById('addPickupSpotModal')).hide();
+        loadPickupSpots();
     } catch (error) {
-        showError('Failed to add depot: ' + error.message);
+        showError('Failed to add pickup spot: ' + error.message);
     }
 }
 
-// Bulk depot functions
-function showBulkDepotModal() {
+// Bulk pickup spot functions
+function showBulkPickupSpotModal() {
     appState.spotFormCount = 0;
-    const formsContainer = document.getElementById('bulk-depot-forms');
+    const formsContainer = document.getElementById('bulk-pickup_spot-forms');
     formsContainer.innerHTML = '';
     
     // Add initial forms
-    addDepotForm();
-    addDepotForm();
-    addDepotForm();
+    addPickupSpotForm();
+    addPickupSpotForm();
+    addPickupSpotForm();
     
-    const modal = new bootstrap.Modal(document.getElementById('bulkDepotModal'));
+    const modal = new bootstrap.Modal(document.getElementById('bulkPickupSpotModal'));
     modal.show();
 }
 
-function addDepotForm() {
-    const formsContainer = document.getElementById('bulk-depot-forms');
+function addPickupSpotForm() {
+    const formsContainer = document.getElementById('bulk-pickup_spot-forms');
     const formIndex = appState.spotFormCount++;
     
     const formHtml = `
-        <div class="bulk-form-item" id="depot-form-${formIndex}">
-            <button type="button" class="remove-btn" onclick="removeDepotForm(${formIndex})">×</button>
+        <div class="bulk-form-item" id="pickupspot-form-${formIndex}">
+            <button type="button" class="remove-btn" onclick="removePickupSpotForm(${formIndex})">×</button>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -897,15 +910,15 @@ function addDepotForm() {
     formsContainer.insertAdjacentHTML('beforeend', formHtml);
 }
 
-function removeDepotForm(formIndex) {
-    const formElement = document.getElementById(`depot-form-${formIndex}`);
+function removePickupSpotForm(formIndex) {
+    const formElement = document.getElementById(`pickupspot-form-${formIndex}`);
     if (formElement) {
         formElement.remove();
     }
 }
 
-async function addBulkDepots() {
-    const formsContainer = document.getElementById('bulk-depot-forms');
+async function addBulkPickupSpots() {
+    const formsContainer = document.getElementById('bulk-pickup_spot-forms');
     const forms = formsContainer.querySelectorAll('.bulk-form-item');
     const spotsData = [];
     
@@ -930,16 +943,16 @@ async function addBulkDepots() {
     });
     
     if (spotsData.length === 0) {
-        showError('Please fill in at least one complete depot form');
+        showError('Please fill in at least one complete pickup spot form');
         return;
     }
     
-    // Validate all depots
+    // Validate all pickup spots
     const allErrors = [];
-    spotsData.forEach((depot, index) => {
-        const errors = validateDepot(depot);
+    spotsData.forEach((pickupspot, index) => {
+        const errors = validatePickupSpot(pickupspot);
         if (errors.length > 0) {
-            allErrors.push(`Depot ${index + 1}: ${errors.join(', ')}`);
+            allErrors.push(`PickupSpot ${index + 1}: ${errors.join(', ')}`);
         }
     });
     
@@ -949,30 +962,30 @@ async function addBulkDepots() {
     }
     
     try {
-        await api.addBulkDepots(spotsData);
+        await api.addBulkPickupSpots(spotsData);
         await saveConfiguration();
-        showSuccess(`${spotsData.length} depots added successfully`);
+        showSuccess(`${spotsData.length} pcikup spots added successfully`);
         
         // Close modal and reload
-        bootstrap.Modal.getInstance(document.getElementById('bulkDepotModal')).hide();
-        loadDepots();
+        bootstrap.Modal.getInstance(document.getElementById('bulkPickupSpotModal')).hide();
+        loadPickupSpots();
     } catch (error) {
-        showError('Failed to add depots: ' + error.message);
+        showError('Failed to add pickup spots: ' + error.message);
     }
 }
 
-async function deleteDepot(depotId) {
-    if (!confirm('Are you sure you want to delete this depot?')) {
+async function deletePickupSpot(pickupspotId) {
+    if (!confirm('Are you sure you want to delete this pickup spot?')) {
         return;
     }
     
     try {
-        await api.deleteDepot(depotId);
+        await api.deletePickupSpot(pickupspotId);
         await saveConfiguration();
         showSuccess('PickupSpot deleted successfully');
-        loadDepots();
+        loadPickupSpots();
     } catch (error) {
-        showError('Failed to delete depot: ' + error.message);
+        showError('Failed to delete pickup spot: ' + error.message);
     }
 }
 
@@ -1015,7 +1028,7 @@ async function optimizeRoutes() {
         showSuccess('🎉 Routes optimized successfully!');
         displayOptimizationResults(result);
         
-        // Don't visualize on depot map - only on Routes tab
+        // Don't visualize on pickup spot map - only on Routes tab
         // visualizeRoutesOnMap(result); // REMOVED
         
         // Update Routes tab
@@ -1051,19 +1064,19 @@ function displayOptimizationResults(result) {
                             <strong>Vehicles Used:</strong> ${result.total_vehicles_used}
                         </div>
                         <div class="col-md-3">
-                            <strong>Unassigned:</strong> ${result.unassigned_depots.length} depots
+                            <strong>Unassigned:</strong> ${result.unassigned_pickupspots?.length || 0} pickupspots
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
-    
-    if (result.unassigned_depots.length > 0) {
+
+    if (result.unassigned_pickupspots && result.unassigned_pickupspots.length > 0) {
         html += `
             <div class="alert alert-warning">
-                <h6><i class="fas fa-exclamation-triangle"></i> Unassigned Depots</h6>
-                <p>The following depots could not be assigned: ${result.unassigned_depots.join(', ')}</p>
+                <h6><i class="fas fa-exclamation-triangle"></i> Unassigned Pickup Spots</h6>
+                <p>The following pickup spots could not be assigned: ${result.unassigned_pickupspots.join(', ')}</p>
                 <p>Consider adding more vehicles or increasing vehicle capacity.</p>
             </div>
         `;
@@ -1096,7 +1109,7 @@ function displayOptimizationResults(result) {
                         </div>
                     </div>
                     <hr>
-                    <small><strong>Route:</strong> Factory → ${route.stops.map(s => s.depot_name).join(' → ')} → Factory</small>
+                    <small><strong>Route:</strong> Factory → ${route.stops.map(s => s.pickupspot_name).join(' → ')} → Factory</small>
                 </div>
             </div>
         `;
@@ -1157,8 +1170,8 @@ let routePolylines = []; // Store polylines for cleanup
 
 function visualizeRoutesOnMap(result) {
     try {
-        // Get the depot map
-        const map = appState.maps.depot;
+        // Get the pickup spot map
+        const map = appState.maps.pickupspot;
         
         if (!map) {
             console.error('PickupSpot map not initialized');
@@ -1173,18 +1186,24 @@ function visualizeRoutesOnMap(result) {
         });
         routePolylines = [];
         
-        // Colors for different vehicles (vibrant colors for better visibility)
+        // Colors for different vehicles (dark shades for better visibility)
         const colors = [
-            '#FF0000', // Red
-            '#0000FF', // Blue
-            '#00FF00', // Green
-            '#FFA500', // Orange
-            '#9400D3', // Purple
-            '#FF1493', // Deep Pink
-            '#00CED1', // Dark Turquoise
-            '#FFD700', // Gold
-            '#FF4500', // Orange Red
-            '#32CD32'  // Lime Green
+            '#C62828', // Dark Red
+            '#AD1457', // Dark Pink
+            '#6A1B9A', // Dark Purple
+            '#4527A0', // Dark Deep Purple
+            '#283593', // Dark Indigo
+            '#1565C0', // Dark Blue
+            '#0277BD', // Dark Light Blue
+            '#00838F', // Dark Cyan
+            '#00695C', // Dark Teal
+            '#2E7D32', // Dark Green
+            '#558B2F', // Dark Light Green
+            '#9E9D24', // Dark Lime
+            '#F9A825', // Dark Yellow
+            '#FF8F00', // Dark Amber
+            '#EF6C00', // Dark Orange
+            '#D84315'  // Dark Deep Orange
         ];
         
         if (!result.routes || result.routes.length === 0) {
@@ -1213,18 +1232,18 @@ function visualizeRoutesOnMap(result) {
             });
         }
         
-        // Fallback: use depot coordinates if no OSRM geometry available
+        // Fallback: use pickup spot coordinates if no OSRM geometry available
         if (routeCoords.length === 0) {
             // Add factory as start point
             if (appState.config.factory) {
                 routeCoords.push([appState.config.factory.latitude, appState.config.factory.longitude]);
             }
             
-            // Add all depot stops
+            // Add all pickup spots stops
             route.stops.forEach(stop => {
-                const depot = appState.config.pickup_spots.find(d => d.name === stop.spot_name);
-                if (depot) {
-                    routeCoords.push([depot.latitude, depot.longitude]);
+                const pickupspot = appState.config.pickup_spots.find(d => d.name === stop.pickupspot_name);
+                if (pickupspot) {
+                    routeCoords.push([pickupspot.latitude, pickupspot.longitude]);
                 }
             });
             
@@ -1238,7 +1257,7 @@ function visualizeRoutesOnMap(result) {
         if (routeCoords.length > 1) {
             const polyline = L.polyline(routeCoords, {
                 color: color,
-                weight: 5,
+                weight: 7,
                 opacity: 0.8,
                 smoothFactor: 1
             }).addTo(map);
@@ -1256,7 +1275,7 @@ function visualizeRoutesOnMap(result) {
                                     polygon: false,
                                     pathOptions: {
                                         stroke: true,
-                                        weight: 3,
+                                        weight: 4,
                                         color: color,
                                         opacity: 0.9
                                     }

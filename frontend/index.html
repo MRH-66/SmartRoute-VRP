@@ -46,7 +46,7 @@
             <div class="progress-line"></div>
             <div class="progress-step" id="step-pickup-spots">
                 <div class="step-circle">3</div>
-                <div class="step-label">Depots</div>
+                <div class="step-label">Pickup Spots</div>
             </div>
             <div class="progress-line"></div>
             <div class="progress-step" id="step-optimize">
@@ -77,7 +77,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="pickup-spots-tab" data-bs-toggle="tab" href="#pickup-spots">
-                    <i class="fas fa-map-marker-alt"></i> Depots
+                    <i class="fas fa-map-marker-alt"></i> Pickup Spots
                 </a>
             </li>
             <li class="nav-item">
@@ -125,9 +125,9 @@
                                 <div class="row mt-3">
                                     <div class="col-md-6">
                                         <div class="config-item">
-                                            <h6><i class="fas fa-map-marker-alt"></i> Depot Summary</h6>
-                                            <div id="depot-status" class="status-not-set">
-                                                <i class="fas fa-times-circle"></i> No depots
+                                            <h6><i class="fas fa-map-marker-alt"></i> Pickup Spot Summary</h6>
+                                            <div id="pickup-spots-status" class="status-not-set">
+                                                <i class="fas fa-times-circle"></i> No Pickup Spots
                                             </div>
                                         </div>
                                     </div>
@@ -231,34 +231,34 @@
                 </div>
             </div>
 
-            <!-- Depots Tab -->
+            <!-- Pickup Spots Tab -->
             <div class="tab-pane fade" id="pickup-spots">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5><i class="fas fa-map-marker-alt"></i> Pickup Depots</h5>
+                        <h5><i class="fas fa-map-marker-alt"></i> Pickup Spots</h5>
                         <div>
-                            <button class="btn btn-success me-2" onclick="showBulkDepotModal()">
+                            <button class="btn btn-success me-2" onclick="showBulkPickupSpotModal()">
                                 <i class="fas fa-plus-circle"></i> Add Multiple
                             </button>
-                            <button class="btn btn-primary" onclick="showAddDepotModal()">
-                                <i class="fas fa-plus"></i> Add Depot
+                            <button class="btn btn-primary" onclick="showAddPickupSpotModal()">
+                                <i class="fas fa-plus"></i> Add Pickup Spot
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-8">
-                                <div id="depot-map" style="height: 400px;"></div>
+                                <div id="pickup-spot-map" style="height: 400px;"></div>
                                 <p class="text-muted mt-2">
-                                    <i class="fas fa-info-circle"></i> Click on the map to add depot locations
+                                    <i class="fas fa-info-circle"></i> Click on the map to add pickup spot locations
                                 </p>
                             </div>
                             <div class="col-md-4">
-                                <div id="depot-summary">
-                                    <!-- Dynamic depot summary -->
+                                <div id="pickup-spot-summary">
+                                    <!-- Dynamic pickup spot summary -->
                                 </div>
-                                <div id="depot-list" class="mt-3">
-                                    <!-- Dynamic depot list -->
+                                <div id="pickup-spot-list" class="mt-3">
+                                    <!-- Dynamic pickup spot list -->
                                 </div>
                             </div>
                         </div>
@@ -275,7 +275,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i> 
-                            Click "Optimize Routes" to find the most efficient vehicle routes for your depots. 
+                            Click "Optimize Routes" to find the most efficient vehicle routes for your pickup spots. 
                             The system will automatically minimize costs and optimize vehicle usage.
                         </div>
                         
@@ -448,61 +448,61 @@
         </div>
     </div>
 
-    <!-- Add Depot Modal -->
-    <div class="modal fade" id="addDepotModal" tabindex="-1">
+    <!-- Add Pickup Spot Modal -->
+    <div class="modal fade" id="addPickupSpotModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Depot</h5>
+                    <h5 class="modal-title">Add Pickup Spot</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addDepotForm">
+                    <form id="addPickupSpotForm">
                         <div class="mb-3">
-                            <label class="form-label">Depot Name</label>
-                            <input type="text" class="form-control" id="depotName" required>
+                            <label class="form-label">Pickup Spot Name</label>
+                            <input type="text" class="form-control" id="pickupspotName" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Latitude</label>
-                            <input type="number" class="form-control" id="depotLat" step="0.000001" required>
+                            <input type="number" class="form-control" id="pickupspotLat" step="0.000001" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Longitude</label>
-                            <input type="number" class="form-control" id="depotLon" step="0.000001" required>
+                            <input type="number" class="form-control" id="pickupspotLon" step="0.000001" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Number of Workers</label>
-                            <input type="number" class="form-control" id="depotWorkers" min="1" max="500" required>
+                            <input type="number" class="form-control" id="pickupspotWorkers" min="1" max="500" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addDepot()">Add Depot</button>
+                    <button type="button" class="btn btn-primary" onclick="addPickupSpot()">Add Pickup Spot</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bulk Add Depots Modal -->
-    <div class="modal fade" id="bulkDepotModal" tabindex="-1">
+    <!-- Bulk Add Pickup Spots Modal -->
+    <div class="modal fade" id="bulkPickupSpotModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Multiple Depots</h5>
+                    <h5 class="modal-title">Add Multiple Pickup Spots</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="bulk-pickup_spot-forms">
                         <!-- Dynamic forms -->
                     </div>
-                    <button class="btn btn-success" onclick="addDepotForm()">
-                        <i class="fas fa-plus"></i> Add Another Depot
+                    <button class="btn btn-success" onclick="addPickupSpotForm()">
+                        <i class="fas fa-plus"></i> Add Another Pickup Spot
                     </button>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addBulkDepots()">Add All Depots</button>
+                    <button type="button" class="btn btn-primary" onclick="addBulkPickupSpots()">Add All Pickup Spots</button>
                 </div>
             </div>
         </div>
@@ -513,8 +513,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
     <script src="/static/js/config.js"></script>
-    <script src="/static/js/api.js?v=2.4"></script>
-    <script src="/static/js/route-visualizer.js?v=2.4"></script>
-    <script src="/static/js/app.js?v=2.4"></script>
+    <script src="/static/js/api.js?v=2.9"></script>
+    <script src="/static/js/route-visualizer.js?v=2.9"></script>
+    <script src="/static/js/app.js?v=2.9"></script>
 </body>
 </html>
